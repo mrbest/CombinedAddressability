@@ -8,10 +8,10 @@ library(lucr)
 
 process_one_contract <- function(contract_name)
 {
-  addressability_matrix <- dplyr_gen_addressability_matrix_df(contract_name, training_transactions)
-  result_df <- dplyr_gen_testPhase_df(addressability_matrix, testing_transactions)
+  addressability_matrix <<- dplyr_gen_addressability_matrix_df(contract_name, training_transactions)
+  result_df <<- dplyr_gen_testPhase_df(addressability_matrix, testing_transactions)
   addressability_result <- result_df %>% select(dollars_obligated)%>% sum()
-  addressability_result_formatted <- to_currency(oasis_addressability_result, currency_symbol = "$", symbol_first = TRUE, group_size = 3, group_delim = ",", decimal_size = 2,decimal_delim = ".")
+  addressability_result_formatted <- to_currency(addressability_result, currency_symbol = "$", symbol_first = TRUE, group_size = 3, group_delim = ",", decimal_size = 2,decimal_delim = ".")
   print(paste0( contract_name," addressable spend is : ", addressability_result_formatted))
 }
 
@@ -24,11 +24,11 @@ load_spark_csv <- function(sc)
   
   print("Performing socio-economic factor clean-up")
   ###Re-code NAs first!!!!!!!
-  #raw_df <<- raw_df %>% mutate(is.na(women_owned_flag == "YES", "WO", "NO"))
-  #raw_df <<- raw_df %>% mutate(veteran_owned_flag = if_else(veteran_owned_flag == "YES", "VO", "NO"))
-  #raw_df <<- raw_df %>% mutate(sbg_flag = if_else(sbg_flag=="Y", "SBG", "NO"))
-  #raw_df <<- raw_df %>% mutate(minority_owned_business_flag = if_else(minority_owned_business_flag == "YES", "MB", "NO"))
-  #raw_df <<- raw_df %>% mutate(foreign_government = if_else(foreign_government == "YES", "FG", "NO"))
+  raw_df <<- raw_df %>% mutate(women_owned_flag = if_else(is.na(women_owned_flag) == TRUE, "FALSE", women_owned_flag))
+  raw_df <<- raw_df %>% mutate(veteran_owned_flag = if_else(is.na(veteran_owned_flag) == TRUE, "FALSE", women_owned_flag))
+  raw_df <<- raw_df %>% mutate(sbg_flag = if_else(is.na(sbg_flag) == TRUE, "FALSE", sbg_flag))
+  raw_df <<- raw_df %>% mutate(minority_owned_business_flag = if_else(is.na(minority_owned_business_flag) == TRUE, "FALSE", minority_owned_business_flag))
+  raw_df <<- raw_df %>% mutate(foreign_government = if_else(is.na(foreign_government) == TRUE, "FALSE", foreign_government))
   
   
   raw_df <<- raw_df %>% mutate(women_owned_flag = if_else(women_owned_flag == "YES", "WO", "NO"))
@@ -57,12 +57,19 @@ load_spark_parquet <- function()
   raw_df <<- spark_read_parquet(sc, name="raw_df", path = "August28FPDS.prq/")
   #filter by date range to only have FY16
   toc()
+  ###Re-code NAs first!!!!!!!
+  raw_df <<- raw_df %>% mutate(women_owned_flag = if_else(is.na(women_owned_flag) == TRUE, "FALSE", women_owned_flag))
+  raw_df <<- raw_df %>% mutate(veteran_owned_flag = if_else(is.na(veteran_owned_flag) == TRUE, "FALSE", women_owned_flag))
+  raw_df <<- raw_df %>% mutate(sbg_flag = if_else(is.na(sbg_flag) == TRUE, "FALSE", sbg_flag))
+  raw_df <<- raw_df %>% mutate(minority_owned_business_flag = if_else(is.na(minority_owned_business_flag) == TRUE, "FALSE", minority_owned_business_flag))
+  raw_df <<- raw_df %>% mutate(foreign_government = if_else(is.na(foreign_government) == TRUE, "FALSE", foreign_government))
+  
   #print("Performing socio-economic factor re-coding and cleaning")
-  raw_df <<- raw_df %>% mutate(women_owned_flag = if_else(women_owned_flag == "YES", "WO", "NO"))
-  raw_df <<- raw_df %>% mutate(veteran_owned_flag = if_else(veteran_owned_flag == "YES", "VO", "NO"))
-  raw_df <<- raw_df %>% mutate(sbg_flag = if_else(sbg_flag=="Y", "SBG", "NO"))
-  raw_df <<- raw_df %>% mutate(minority_owned_business_flag = if_else(minority_owned_business_flag == "YES", "MB", "NO"))
-  raw_df <<- raw_df %>% mutate(foreign_government = if_else(foreign_government == "YES", "FG", "NO"))
+  raw_df <<- raw_df %>% mutate(women_owned_flag = if_else(women_owned_flag == "YES", "WO", "FALSE"))
+  raw_df <<- raw_df %>% mutate(veteran_owned_flag = if_else(veteran_owned_flag == "YES", "VO", "FALSE"))
+  raw_df <<- raw_df %>% mutate(sbg_flag = if_else(sbg_flag=="Y", "SBG", "FALSE"))
+  raw_df <<- raw_df %>% mutate(minority_owned_business_flag = if_else(minority_owned_business_flag == "YES", "MB", "FALSE"))
+  raw_df <<- raw_df %>% mutate(foreign_government = if_else(foreign_government == "YES", "FG", "FALSE"))
   
   print("Creating add_key for all transactions")
   
@@ -78,7 +85,7 @@ load_spark_parquet <- function()
   
   bic_contracts <<- training_transactions %>% 
       distinct(official_bic_contract) %>%
-      collect() %>% .$contract_name
+      collect() %>% .$official_bic_contract
   toc()
   tic()
   print("subsetting testing transactions")
@@ -131,7 +138,7 @@ dplyr_gen_testPhase_df <- function(addressability_matrix, testing_df)
 {
   addressability_matrix_addkey <- addressability_matrix %>% select(addkey) %>% .$addkey
   addressability_test_result <- testing_df %>% 
-                                filter(level_1_category_group == "GWCM") %>%
+                                #filter(level_1_category_group == "GWCM") %>%#
                                 filter(addkey %in% addressability_matrix_addkey) %>% collect()
   addressability_test_result
 }

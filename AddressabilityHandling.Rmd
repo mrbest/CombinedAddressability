@@ -24,6 +24,7 @@ spark_write_parquet(raw_df, path = "28Aug17.prq")
 ```
 
 ```{r loadfiles}
+source("opt_addressability.R")
 sc <- sparkInit()
 load_spark_parquet()
 
