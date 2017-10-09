@@ -6,13 +6,70 @@ library(tictoc)
 library(lucr)
 
 
-process_one_contract <- function(contract_name)
+process_gsa_contracts <- function()
+{ #declare vector accumulators for contract name, addressable obligations result and contract actual obligations 
+  actual_obligations_vector <- double()
+  addressable_market_vector <- double()
+  contract_name_vector <- character()
+  #declare and query list of GSA contracts
+  gsa_contracts <- training_transactions %>% 
+    filter(managing_agency == "GSA") %>% 
+    distinct(contract_name) %>% 
+    collect() %>% .$contract_name
+    gsa_contracts <- na.omit(gsa_contracts)
+  #set up sentinel for looping through GSA contracts  
+  contract_count <- length(gsa_contracts)
+  for(i in 1:contract_count)
+    {##accumulate addressable market and actual obligations contract by contract
+     addressable_market_vector <- append(addressable_market_vector, process_one_contract(gsa_contracts[i]))
+     contract_name_vector <- append(contract_name_vector, gsa_contracts[i])
+     actual_obligations_vector <- append(actual_obligations_vector, opt_get_contract_totals(gsa_contracts[i]))
+     }
+  #write result for all contracts to a dataframe  
+  gsa_result_df <- data_frame(contract_name_vector, actual_obligations_vector, addressable_market_vector)
+  gsa_result_df
+}
+
+process_bic_contracts <- function()
 {
+  #declare vector accumulators for contract name, addressable obligations result and contract actual obligations 
+  actual_obligations_vector <- double()
+  addressable_market_vector <- double()
+  contract_name_vector <- character()
+  #declare and query list of BIC contracts
+  #STEP 1. Query official_bic_contract column for distinct BICs
+  bic_contract_list <- training_transactions %>% 
+    distinct(official_bic_contract) %>% na.omit() %>% collect() %>% .$official_bic_contract
+  #STEP 2. Query contract_name column for BICs. This has to be done because contract names are different in the 
+  # official_bic_contract column from the names used in the contract column
+  bic_contracts <<- training_transactions %>% 
+      filter(official_bic_contract %in% bic_contract_list) %>% 
+      distinct(contract_name) %>%
+      collect() %>% 
+     .$contract_name
+  #set up sentinel for looping through GSA contracts 
+  contract_count <- length(bic_contracts)
+  for(i in 1:contract_count)
+  { ##accumulate addressable market and actual obligations contract by contract
+    addressable_market_vector <- append(addressable_market_vector, process_one_contract(bic_contracts[i]))
+    contract_name_vector <- append(contract_name_vector, bic_contracts[i])
+    actual_obligations_vector <- append(actual_obligations_vector, opt_get_contract_totals(bic_contracts[i]))
+  }
+  
+  bic_result_df <- data_frame(contract_name_vector, actual_obligations_vector, addressable_market_vector)
+  bic_result_df
+}
+
+
+process_one_contract <- function(contract_name)
+{ 
   addressability_matrix <<- dplyr_gen_addressability_matrix_df(contract_name, training_transactions)
   result_df <<- dplyr_gen_testPhase_df(addressability_matrix, testing_transactions)
   addressability_result <- result_df %>% select(dollars_obligated)%>% sum()
+  actual_obligations <<- opt_get_contract_totals(contract_name)
   addressability_result_formatted <- to_currency(addressability_result, currency_symbol = "$", symbol_first = TRUE, group_size = 3, group_delim = ",", decimal_size = 2,decimal_delim = ".")
   print(paste0( contract_name," addressable spend is : ", addressability_result_formatted))
+  addressability_result
 }
 
 load_spark_csv <- function(sc)
@@ -41,20 +98,20 @@ load_spark_csv <- function(sc)
   #filter by date range to only have FY16
   tic()
   print("subsetting training transactions")
-  training_transactions <<- raw_df %>% filter(as.Date(date_signed) >= as.Date("2014-10-01") & as.Date(date_signed) <= as.Date("2015-09-30"))
+  training_transactions <<- raw_df %>% filter(as.Date(date_signed) >= as.Date("2013-10-01") & as.Date(date_signed) <= as.Date("2016-09-30"))
   toc()
   tic()
   print("subsetting testing transactions")
-  testing_transactions <<- raw_df %>% filter(as.Date(date_signed) >= as.Date("2015-10-01") & as.Date(date_signed) <= as.Date("2016-09-30"))
+  testing_transactions <<- raw_df %>% filter(as.Date(date_signed) >= as.Date("2016-10-01") & as.Date(date_signed) <= as.Date("2017-09-30"))
   toc()
 }
 
 
-load_spark_parquet <- function()
+load_spark_parquet <- function(archive)
 {
   tic()
   print("Reading in export")
-  raw_df <<- spark_read_parquet(sc, name="raw_df", path = "August28FPDS.prq/")
+  raw_df <<- spark_read_parquet(sc, name="raw_df", path = archive)
   #filter by date range to only have FY16
   toc()
   ###Re-code NAs first!!!!!!!
@@ -75,17 +132,9 @@ load_spark_parquet <- function()
   
   tic()
   print("subsetting training transactions")
-  training_transactions <<- raw_df %>% filter(as.Date(date_signed) >= as.Date("2014-10-01") & as.Date(date_signed) <= as.Date("2015-09-30")) %>% 
+  training_transactions <<- raw_df %>% filter(as.Date(date_signed) >= as.Date("2014-10-01") & as.Date(date_signed) <= as.Date("2016-09-30")) %>% 
     mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
   
-  gsa_contracts <<- training_transactions %>% 
-      filter(managing_agency == "GSA") %>% 
-      distinct(contract_name) %>% 
-      collect() %>% .$contract_name
-  
-  bic_contracts <<- training_transactions %>% 
-      distinct(official_bic_contract) %>%
-      collect() %>% .$official_bic_contract
   toc()
   tic()
   print("subsetting testing transactions")
@@ -96,9 +145,9 @@ load_spark_parquet <- function()
 
 
 
-opt_get_contract_totals <- function(contract_label, transaction_df)
+opt_get_contract_totals <- function(contract_label)
 {
-  contract_total_obligations <- transaction_df %>% 
+  contract_total_obligations <- testing_transactions %>% 
     filter(contract_name == contract_label) %>% 
     select(dollars_obligated) %>% collect() %>% 
     sum()

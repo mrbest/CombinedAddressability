@@ -26,7 +26,7 @@ spark_write_parquet(raw_df, path = "28Aug17.prq")
 ```{r loadfiles}
 source("opt_addressability.R")
 sc <- sparkInit()
-load_spark_parquet()
+load_spark_parquet("August28FPDS.prq/")
 
 ```
 
@@ -39,12 +39,15 @@ total_strings %>% filter(is.na(level_1_category) == FALSE)%>%
     geom_col() +geom_text(angle=90, color = "orange", size = 3, position = position_stack(vjust = 0.5))+
     theme(axis.text.x  = element_text(angle=90, vjust=0.5, size=10))
 ```
-## Including Plots
-
-You can also embed plots, for example:
+## Calc Addressability for GSA and BIC
 
 ```{r getaddressability}
-process_one_contract("OASIS")
+gsa_addressable_markets <-  process_gsa_contracts()
+write_csv(gsa_addressability_table, paste0("gsa_addressablility_table",Sys.Date(),".csv")
+
+bic_markets <- process_bic_contracts()
+write_csv(bic_addressability_table, paste0("bic_addressability",Sys.Date(),".csv")
+
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
