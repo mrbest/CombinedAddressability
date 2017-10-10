@@ -20,13 +20,13 @@ load_spark_csv(sc)
 ```
 
 ```{r store_to_parquet}
-spark_write_parquet(raw_df, path = "28Aug17.prq")
+spark_write_parquet(raw_df, path = "08OCT17FY13_17.prq")
 ```
 
 ```{r loadfiles}
 source("opt_addressability.R")
 sc <- sparkInit()
-load_spark_parquet("August28FPDS.prq/")
+load_spark_parquet("08OCT17FY13_17.prq/")
 
 ```
 
@@ -43,10 +43,10 @@ total_strings %>% filter(is.na(level_1_category) == FALSE)%>%
 
 ```{r getaddressability}
 gsa_addressable_markets <-  process_gsa_contracts()
-write_csv(gsa_addressability_table, paste0("gsa_addressablility_table",Sys.Date(),".csv")
+write_csv(gsa_addressable_markets, paste0("gsa_addressable_markets",Sys.Date(),".csv"))
 
 bic_markets <- process_bic_contracts()
-write_csv(bic_addressability_table, paste0("bic_addressability",Sys.Date(),".csv")
+write_csv(bic_markets, paste0("bic_addressability",Sys.Date(),".csv"))
 
 ```
 
