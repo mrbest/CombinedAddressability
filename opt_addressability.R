@@ -72,11 +72,11 @@ process_one_contract <- function(contract_name)
   addressability_result
 }
 
-load_spark_csv <- function(sc)
+load_spark_csv <- function(sc, filename)
 {##future dev note: file loading phase can be speeded up by using spark csv reader
-  tic()
+  
   print("Reading in export")
-  raw_df <<- spark_read_csv(sc, name = "sprkdf", "GWCM_FPDS_28_AUGUST_EXTRACT.tsv",delimiter = "\t", header = TRUE, overwrite = TRUE)
+  raw_df <<- spark_read_csv(sc, name = "sprkdf", filename,delimiter = "\t", header = TRUE, overwrite = TRUE)
   toc( )
   
   print("Performing socio-economic factor clean-up")
@@ -96,24 +96,24 @@ load_spark_csv <- function(sc)
 
   print("Creating add_key for all transactions")
   #filter by date range to only have FY16
-  tic()
+  
   print("subsetting training transactions")
   training_transactions <<- raw_df %>% filter(as.Date(date_signed) >= as.Date("2013-10-01") & as.Date(date_signed) <= as.Date("2016-09-30"))
-  toc()
-  tic()
+  
+  
   print("subsetting testing transactions")
   testing_transactions <<- raw_df %>% filter(as.Date(date_signed) >= as.Date("2016-10-01") & as.Date(date_signed) <= as.Date("2017-09-30"))
-  toc()
+  
 }
 
 
 load_spark_parquet <- function(archive)
 {
-  tic()
+  
   print("Reading in export")
   raw_df <<- spark_read_parquet(sc, name="raw_df", path = archive)
   #filter by date range to only have FY16
-  toc()
+  
   ###Re-code NAs first!!!!!!!
   raw_df <<- raw_df %>% mutate(women_owned_flag = if_else(is.na(women_owned_flag) == TRUE, "FALSE", women_owned_flag))
   raw_df <<- raw_df %>% mutate(veteran_owned_flag = if_else(is.na(veteran_owned_flag) == TRUE, "FALSE", women_owned_flag))
@@ -130,17 +130,17 @@ load_spark_parquet <- function(archive)
   
   print("Creating add_key for all transactions")
   
-  tic()
+  
   print("subsetting training transactions")
-  training_transactions <<- raw_df %>% filter(as.Date(date_signed) >= as.Date("2014-10-01") & as.Date(date_signed) <= as.Date("2016-09-30")) %>% 
+  training_transactions <<- raw_df %>% filter(as.Date(date_signed) >= as.Date("2013-10-01") & as.Date(date_signed) <= as.Date("2015-09-30")) %>% 
     mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
   
-  toc()
-  tic()
+  
+  
   print("subsetting testing transactions")
   testing_transactions <<- raw_df %>% filter(as.Date(date_signed) >= as.Date("2015-10-01") & as.Date(date_signed) <= as.Date("2016-09-30")) %>%
     mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
-  toc()
+  
 }
 
 

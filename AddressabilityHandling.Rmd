@@ -15,7 +15,7 @@ When you click the **Knit** button a document will be generated that includes bo
 
 ```{r loadfromcsv}
 sc <- sparkInit()
-load_spark_csv(sc)
+load_spark_csv(sc, "GWCM_FPDS_FY13_FY17_10082017.tsv")
 
 ```
 
@@ -42,12 +42,13 @@ total_strings %>% filter(is.na(level_1_category) == FALSE)%>%
 ## Calc Addressability for GSA and BIC
 
 ```{r getaddressability}
+tic()
 gsa_addressable_markets <-  process_gsa_contracts()
 write_csv(gsa_addressable_markets, paste0("gsa_addressable_markets",Sys.Date(),".csv"))
 
 bic_markets <- process_bic_contracts()
 write_csv(bic_markets, paste0("bic_addressability",Sys.Date(),".csv"))
-
+toc()
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
