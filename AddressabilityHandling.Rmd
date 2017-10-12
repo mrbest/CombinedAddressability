@@ -14,9 +14,10 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 ```{r loadfromcsv}
+source("opt_addressability.R")
 sc <- sparkInit()
 load_spark_csv(sc, "GWCM_FPDS_FY13_FY17_10082017.tsv")
-
+spark_write_parquet(raw_df, path = "08OCT17FY13_17.prq")
 ```
 
 ```{r store_to_parquet}
@@ -49,6 +50,8 @@ write_csv(gsa_addressable_markets, paste0("gsa_addressable_markets",Sys.Date(),"
 bic_markets <- process_bic_contracts()
 write_csv(bic_markets, paste0("bic_addressability",Sys.Date(),".csv"))
 toc()
+
+
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

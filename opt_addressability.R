@@ -11,6 +11,14 @@ process_gsa_contracts <- function()
   actual_obligations_vector <- double()
   addressable_market_vector <- double()
   contract_name_vector <- character()
+  #get dummy addressable matric for master addressable matrix creation
+  master_addressability_matrix <- dplyr_gen_addressability_matrix_df("OS3", training_transactions)
+  #count the rows and make negative in prep for deletion
+  rowcount <- master_addressability_matrix %>% count() %>% .$n 
+  rowcount <- rowcount * -1
+  #set master_addressability_matrix up for recieving addressability matrices
+  master_addressability_matrix <<- master_addressability_matrix[-1:rowcount, ]
+  
   #declare and query list of GSA contracts
   gsa_contracts <- training_transactions %>% 
     filter(managing_agency == "GSA") %>% 
@@ -36,6 +44,13 @@ process_bic_contracts <- function()
   actual_obligations_vector <- double()
   addressable_market_vector <- double()
   contract_name_vector <- character()
+  #get dummy addressable matric for master addressable matrix creation
+  master_addressability_matrix <- dplyr_gen_addressability_matrix_df("OS3", training_transactions)
+  #count the rows and make negative in prep for deletion
+  rowcount <- master_addressability_matrix %>% count() %>% .$n 
+  rowcount <- rowcount * -1
+  #set master_addressability_matrix up for recieving addressability matrices
+  master_addressability_matrix <<- master_addressability_matrix[-1:rowcount, ]
   #declare and query list of BIC contracts
   #STEP 1. Query official_bic_contract column for distinct BICs
   bic_contract_list <- training_transactions %>% 
@@ -63,8 +78,9 @@ process_bic_contracts <- function()
 
 process_one_contract <- function(contract_name)
 { 
-  addressability_matrix <<- dplyr_gen_addressability_matrix_df(contract_name, training_transactions)
-  result_df <<- dplyr_gen_testPhase_df(addressability_matrix, testing_transactions)
+  addressability_matrix <- dplyr_gen_addressability_matrix_df(contract_name, training_transactions)
+  master_addressability_matrix <<- bind_rows(master_addressability_matrix, addressability_matrix)
+  result_df <- dplyr_gen_testPhase_df(addressability_matrix, testing_transactions)
   addressability_result <- result_df %>% select(dollars_obligated)%>% sum()
   actual_obligations <<- opt_get_contract_totals(contract_name)
   addressability_result_formatted <- to_currency(addressability_result, currency_symbol = "$", symbol_first = TRUE, group_size = 3, group_delim = ",", decimal_size = 2,decimal_delim = ".")
@@ -81,18 +97,17 @@ load_spark_csv <- function(sc, filename)
   
   print("Performing socio-economic factor clean-up")
   ###Re-code NAs first!!!!!!!
-  raw_df <<- raw_df %>% mutate(women_owned_flag = if_else(is.na(women_owned_flag) == TRUE, "FALSE", women_owned_flag))
-  raw_df <<- raw_df %>% mutate(veteran_owned_flag = if_else(is.na(veteran_owned_flag) == TRUE, "FALSE", women_owned_flag))
   raw_df <<- raw_df %>% mutate(sbg_flag = if_else(is.na(sbg_flag) == TRUE, "FALSE", sbg_flag))
+  raw_df <<- raw_df %>% mutate(women_owned_flag = if_else(is.na(women_owned_flag) == TRUE, "FALSE", women_owned_flag))
+  raw_df <<- raw_df %>% mutate(veteran_owned_flag = if_else(is.na(veteran_owned_flag) == TRUE, "FALSE", veteran_owned_flag))
   raw_df <<- raw_df %>% mutate(minority_owned_business_flag = if_else(is.na(minority_owned_business_flag) == TRUE, "FALSE", minority_owned_business_flag))
   raw_df <<- raw_df %>% mutate(foreign_government = if_else(is.na(foreign_government) == TRUE, "FALSE", foreign_government))
   
-  
-  raw_df <<- raw_df %>% mutate(women_owned_flag = if_else(women_owned_flag == "YES", "WO", "NO"))
-  raw_df <<- raw_df %>% mutate(veteran_owned_flag = if_else(veteran_owned_flag == "YES", "VO", "NO"))
-  raw_df <<- raw_df %>% mutate(sbg_flag = if_else(sbg_flag=="Y", "SBG", "NO"))
-  raw_df <<- raw_df %>% mutate(minority_owned_business_flag = if_else(minority_owned_business_flag == "YES", "MB", "NO"))
-  raw_df <<- raw_df %>% mutate(foreign_government = if_else(foreign_government == "YES", "FG", "NO"))
+  raw_df <<- raw_df %>% mutate(sbg_flag = if_else(sbg_flag=="Y", "SBG", "FALSE"))
+  raw_df <<- raw_df %>% mutate(women_owned_flag = if_else(women_owned_flag == "YES", "WO", "FALSE"))
+  raw_df <<- raw_df %>% mutate(veteran_owned_flag = if_else(veteran_owned_flag == "YES", "VO", "FALSE"))
+  raw_df <<- raw_df %>% mutate(minority_owned_business_flag = if_else(minority_owned_business_flag == "YES", "MB", "FALSE"))
+  raw_df <<- raw_df %>% mutate(foreign_government = if_else(foreign_government == "YES", "FG", "FALSE"))
 
   print("Creating add_key for all transactions")
   #filter by date range to only have FY16
@@ -114,32 +129,18 @@ load_spark_parquet <- function(archive)
   raw_df <<- spark_read_parquet(sc, name="raw_df", path = archive)
   #filter by date range to only have FY16
   
-  ###Re-code NAs first!!!!!!!
-  raw_df <<- raw_df %>% mutate(women_owned_flag = if_else(is.na(women_owned_flag) == TRUE, "FALSE", women_owned_flag))
-  raw_df <<- raw_df %>% mutate(veteran_owned_flag = if_else(is.na(veteran_owned_flag) == TRUE, "FALSE", women_owned_flag))
-  raw_df <<- raw_df %>% mutate(sbg_flag = if_else(is.na(sbg_flag) == TRUE, "FALSE", sbg_flag))
-  raw_df <<- raw_df %>% mutate(minority_owned_business_flag = if_else(is.na(minority_owned_business_flag) == TRUE, "FALSE", minority_owned_business_flag))
-  raw_df <<- raw_df %>% mutate(foreign_government = if_else(is.na(foreign_government) == TRUE, "FALSE", foreign_government))
-  
-  #print("Performing socio-economic factor re-coding and cleaning")
-  raw_df <<- raw_df %>% mutate(women_owned_flag = if_else(women_owned_flag == "YES", "WO", "FALSE"))
-  raw_df <<- raw_df %>% mutate(veteran_owned_flag = if_else(veteran_owned_flag == "YES", "VO", "FALSE"))
-  raw_df <<- raw_df %>% mutate(sbg_flag = if_else(sbg_flag=="Y", "SBG", "FALSE"))
-  raw_df <<- raw_df %>% mutate(minority_owned_business_flag = if_else(minority_owned_business_flag == "YES", "MB", "FALSE"))
-  raw_df <<- raw_df %>% mutate(foreign_government = if_else(foreign_government == "YES", "FG", "FALSE"))
   
   print("Creating add_key for all transactions")
   
   
   print("subsetting training transactions")
-  training_transactions <<- raw_df %>% filter(as.Date(date_signed) >= as.Date("2013-10-01") & as.Date(date_signed) <= as.Date("2015-09-30")) %>% 
-    mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
-  
+  training_transactions <- raw_df %>% filter(as.Date(date_signed) >= as.Date("2013-10-01") & as.Date(date_signed) <= as.Date("2015-09-30")) 
+  training_transactions <<- training_transactions %>% mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
   
   
   print("subsetting testing transactions")
-  testing_transactions <<- raw_df %>% filter(as.Date(date_signed) >= as.Date("2015-10-01") & as.Date(date_signed) <= as.Date("2016-09-30")) %>%
-    mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
+  testing_transactions <- raw_df %>% filter(as.Date(date_signed) >= as.Date("2015-10-01") & as.Date(date_signed) <= as.Date("2016-09-30")) 
+  testing_transactions <<- testing_transactions %>% mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
   
 }
 
@@ -159,7 +160,7 @@ dplyr_gen_addressability_matrix_df <- function(contract_label, training_df)
 {
   #builds addressabbility matrix based on 6 factors
   addressability_matrix_df <-  training_df %>% filter(contract_name == contract_label) %>% 
-    distinct( product_or_service_code, naics_code, sbg_flag, women_owned_flag, veteran_owned_flag, minority_owned_business_flag, foreign_government) %>%
+    distinct( contract_name, product_or_service_code, naics_code, sbg_flag, women_owned_flag, veteran_owned_flag, minority_owned_business_flag, foreign_government) %>%
     arrange( product_or_service_code, naics_code, sbg_flag, women_owned_flag, veteran_owned_flag, minority_owned_business_flag, foreign_government) %>%
     collect()
   #adds addressability key to matrix post collection
