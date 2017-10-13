@@ -45,9 +45,11 @@ total_strings %>% filter(is.na(level_1_category) == FALSE)%>%
 ```{r getaddressability}
 tic()
 gsa_addressable_markets <-  process_gsa_contracts()
+write_csv(master_addressability_matrix, paste0("gsa_addressability_matrix",Sys.Date(),".csv"))
 write_csv(gsa_addressable_markets, paste0("gsa_addressable_markets",Sys.Date(),".csv"))
-
+rm(master_addressability_matrix)
 bic_markets <- process_bic_contracts()
+write_csv(master_addressability_matrix, paste0("bic_addressability_matrix",Sys.Date(),".csv"))
 write_csv(bic_markets, paste0("bic_addressability",Sys.Date(),".csv"))
 toc()
 
