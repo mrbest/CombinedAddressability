@@ -194,4 +194,12 @@ dplyr_gen_testPhase_df <- function(addressability_matrix, testing_df)
 }
 
 
-
+addressability_injection <- function(addressability_matrix, inject_filename)
+{
+  #read in addressability rows. 
+  signature_update <- read_csv(filename)
+  #inject rows in to addressability matrix
+  modified_addressability_matrix <- bind_rows(addressabiity_matrix, signature_update)
+  #return updated addressability matrix
+  modified_addressability_matrix
+}
