@@ -203,3 +203,21 @@ addressability_injection <- function(addressability_matrix, inject_filename)
   #return updated addressability matrix
   modified_addressability_matrix
 }
+
+
+calc_frequency <-function(foriegn_addkey, transaction_df)
+{
+  total_rowcount <- transaction_df %>% count() %>% collect()
+  count_matching_signature <- transaction_df %>% filter(addkey == foriegn_addkey) %>% count() %>%collect()
+  proportion = count_matching_signature / total_rowcount
+  proportion
+}
+
+frequency_threshold_filter <- function(addressability_matrix, transaction_df)
+{
+##pre: Access to addressability matrix and testing data set: 
+##note: we may want to try using a time duration == to the training and testing data set to get the right frequency driven filtering
+mod_add_matrix_matrix <- addressability_matrix %>%rowwise()%>% mutate(proportion = calc_frequency(addkey, transaction_df))
+mod_add_matrix
+}
+
