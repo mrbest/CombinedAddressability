@@ -134,13 +134,27 @@ load_spark_parquet <- function(archive)
   
   
   print("subsetting training transactions")
-  training_transactions <- raw_df %>% filter(as.Date(date_signed) >= as.Date("2013-10-01") & as.Date(date_signed) <= as.Date("2015-09-30")) 
+  training_transactions <- raw_df %>% filter(as.Date(date_signed) >= as.Date("2012-10-01") & as.Date(date_signed) <= as.Date("2017-09-30")) 
   training_transactions <<- training_transactions %>% mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
   
   
   print("subsetting testing transactions")
-  testing_transactions <- raw_df %>% filter(as.Date(date_signed) >= as.Date("2015-10-01") & as.Date(date_signed) <= as.Date("2016-09-30")) 
-  testing_transactions <<- testing_transactions %>% mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
+  fy13testing_transactions <- raw_df %>% filter(as.Date(date_signed) >= as.Date("2012-10-01") & as.Date(date_signed) <= as.Date("2013-09-30")) 
+  fy13testing_transactions <<- fy13testing_transactions %>% mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
+  
+  fy14testing_transactions <- raw_df %>% filter(as.Date(date_signed) >= as.Date("2013-10-01") & as.Date(date_signed) <= as.Date("2014-09-30")) 
+  fy14testing_transactions <<- fy14testing_transactions %>% mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
+  
+  fy15testing_transactions <- raw_df %>% filter(as.Date(date_signed) >= as.Date("2014-10-01") & as.Date(date_signed) <= as.Date("2015-09-30")) 
+  fy15testing_transactions <<- fy15testing_transactions %>% mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
+  
+  fy16testing_transactions <- raw_df %>% filter(as.Date(date_signed) >= as.Date("2015-10-01") & as.Date(date_signed) <= as.Date("2016-09-30")) 
+  fy16testing_transactions <<- fy16testing_transactions %>% mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
+  
+  fy17testing_transactions <- raw_df %>% filter(as.Date(date_signed) >= as.Date("2016-10-01") & as.Date(date_signed) <= as.Date("2017-09-30")) 
+  fy17testing_transactions <<- fy17testing_transactions %>% mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
+  
+  
   
 }
 
@@ -220,4 +234,40 @@ frequency_threshold_filter <- function(addressability_matrix, transaction_df)
 mod_add_matrix_matrix <- addressability_matrix %>%rowwise()%>% mutate(proportion = calc_frequency(addkey, transaction_df))
 mod_add_matrix
 }
+
+
+capture_FAS_Training_Awards <- function(regex_pattern, start_date, end_date)
+{
+    fas_contracts <- raw_df %>% filter(as.Date(date_signed) >= as.Date(start_date) & as.Date(date_signed) <= as.Date(end_date)) %>%
+    filter(rlike(reference_piid, regex_pattern) == TRUE) %>% 
+    select(date_signed,reference_piid, idv_ref_idv_piid, managing_agency, contracting_agency_name, product_or_service_code, naics_code, sbg_flag, women_owned_flag, veteran_owned_flag, minority_owned_business_flag, foreign_government, dollars_obligated)
+}
+
+
+capture_FAS_Dependent_BPA_Training_Awards <- function(regex_pattern, start_date, end_date)
+{
+     fas_bpas <- raw_df %>% filter(as.Date(date_signed) >= as.Date(start_date) & as.Date(date_signed) <= as.Date(end_date)) %>%
+       filter(rlike(idv_ref_idv_piid, regex_pattern) == TRUE) %>% 
+       select(date_signed,reference_piid, idv_ref_idv_piid, managing_agency, contracting_agency_name, product_or_service_code, naics_code, sbg_flag, women_owned_flag, veteran_owned_flag, minority_owned_business_flag, foreign_government, dollars_obligated)
+}
+
+
+FAS_dplyr_gen_addressability_matrix_df <- function(regex_pattern)
+{
+  fas_awards <- capture_FAS_Training_Awards("^GS..[FKQT]", "2013-10-01", "2016-09-30")
+  #builds addressabbility matrix based on 6 factors
+  fas_ref_piids <- fas_awards%>% select(reference_piid) %>% distinct() %>% collect() %>% .$reference_piid
+  addressability_matrix_df <-  raw_df %>% filter(as.Date(date_signed) >= as.Date("2013-10-01") & as.Date(date_signed) <= as.Date("2016-09-30")) %>%
+    filter(reference_piid %in% fas_ref_piids) %>% 
+    distinct( contract_name, product_or_service_code, naics_code, sbg_flag, women_owned_flag, veteran_owned_flag, minority_owned_business_flag, foreign_government) %>%
+    arrange( product_or_service_code, naics_code, sbg_flag, women_owned_flag, veteran_owned_flag, minority_owned_business_flag, foreign_government) %>%
+    collect()
+  #adds addressability key to matrix post collection
+  addressability_matrix_return <- addressability_matrix_df %>% 
+    mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
+  addressability_matrix_return
+}
+
+
+
 
