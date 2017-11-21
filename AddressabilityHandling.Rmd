@@ -16,8 +16,8 @@ When you click the **Knit** button a document will be generated that includes bo
 ```{r loadfromcsv}
 source("opt_addressability.R")
 sc <- sparkInit()
-load_spark_csv(sc, "GWCM_FPDS_FY13_FY17_10082017.tsv")
-spark_write_parquet(raw_df, path = "08OCT17FY13_17.prq")
+load_spark_csv(sc, "../../GWCM_Extracts/GWCM_FPDS_FY13_PRESENT_NOV_13.tsv")
+spark_write_parquet(raw_df, path = "13Nov17FY13_17.prq")
 ```
 
 ```{r store_to_parquet}
@@ -27,12 +27,12 @@ spark_write_parquet(raw_df, path = "08OCT17FY13_17.prq")
 ```{r loadfiles}
 source("opt_addressability.R")
 sc <- sparkInit()
-load_spark_parquet("../../GWCM_Extracts/FY13_17_complete.prq/")
+load_spark_parquet("../../GWCM_Extracts/13Nov17FY13_17.prq/")
 
 ```
 
 ```{r plotcats}
-totals <<- training_transactions %>% group_by(level_1_category) %>% summarise(cat_total = sum(dollars_obligated)) %>% collect()
+totals <<- fy16testing_transactions %>% group_by(level_1_category) %>% summarise(cat_total = sum(dollars_obligated)) %>% collect()
 total_strings <- totals %>% mutate(dollar_totals = to_currency(cat_total, currency_symbol = "$", symbol_first = TRUE, group_size = 3, group_delim = ",", decimal_size = 2,decimal_delim = ".")) %>% collect()                                                                                                     
 
 total_strings %>% filter(is.na(level_1_category) == FALSE)%>%
