@@ -1,0 +1,83 @@
+---
+title: "Combined_Addressability V2"
+author: "Clifton Best"
+date: "11/28/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r load_parquet}
+source("addressabilityEffects.R")
+sc <- sparkInit()
+tic()
+load_spark_parquet("minimal_addrmrkt28NOV17.prq/")
+toc()
+
+```
+
+You can also embed plots, for example:
+
+```{r plotcats}
+tic()
+totals <<- fy16testing_transactions %>% group_by(level_1_category) %>% summarise(cat_total = sum(dollars_obligated)) %>% collect()
+total_strings <- totals %>% mutate(dollar_totals = to_currency(cat_total, currency_symbol = "$", symbol_first = TRUE, group_size = 3, group_delim = ",", decimal_size = 2,decimal_delim = ".")) %>% collect()                                                                                                     
+
+total_strings %>% filter(is.na(level_1_category) == FALSE)%>%
+    ggplot(aes(x=as.factor(level_1_category), y=cat_total, label = dollar_totals) ) + 
+    geom_col() +geom_text(angle=90, color = "orange", size = 3, position = position_stack(vjust = 0.5))+
+    theme(axis.text.x  = element_text(angle=90, vjust=0.5, size=10))
+toc()
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r GSA Addressability Mode = PSC_NAICS}
+tic()
+gsa_psc_naics_addressability <- process_gsa_contracts("PSC_NAICS")
+toc()
+```
+
+```{r GSA_Addressability Mode = ADDR_MRKT}
+tic()
+process_gsa_contracts("PSC_NAICS")
+toc()
+```
+
+```{r BIC_Addressability Mode = ADDR_MRKT}
+tic()
+process_bic_contracts("ADDR_MRKT")
+toc()
+```
+
+```{r FAS_Addressability_ADDR_MRKT}
+source("addressabilityEffects.R")
+sc <- sparkInit()
+tic()
+load_spark_parquet("minimal_addrmrkt28NOV17.prq/")
+toc()
+tic()
+process_FAS_Addressability("ADDR_MRKT")
+toc()
+```
+
+```{r FAS_Addressability_PSC_NAICS}
+source("addressabilityEffects.R")
+sc <- sparkInit()
+tic()
+load_spark_parquet("minimal_addrmrkt28NOV17.prq/")
+toc()
+tic()
+process_FAS_Addressability("PSC_NAICS")
+toc()
+```
+
+##new_df <- raw_df %>% select(date_signed, reference_piid, idv_ref_idv_piid, managing_agency, contracting_agency_name, product_or_service_code, naics_code, sbg_flag, women_owned_flag, veteran_owned_flag, minority_owned_business_flag, foreign_government, dollars_obligated, contract_name, official_bic_contract, level_1_category)
