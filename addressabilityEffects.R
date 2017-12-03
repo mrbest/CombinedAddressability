@@ -118,32 +118,11 @@ process_FAS_Addressability <- function(add_mode)
   
 }
 
-process_FAS_contracts <- function()
+agency_bic_addressable_obs <- function(bic, test_period_start, test_period_end)
 {
-#Loop through each FAS contract
-  #build addressability matrix
-  #produce addressability by each funding department
-  #results should be in the form:
-  #[CONTRACT_NAME][FUNDING_DEPARTMENT][OBLIGATIONS][ADDRESSABLE_OBLIGATIONS]
+#build addressability matrix  
 }
 
-process_Agency_BIC_Addressability <- function()
-{
- #Loop through each BIC contract
-  #build addressability matrix
-  #produce addressability by each funding department
-  #results should be in the form:
-  #[CONTRACT_NAME][FUNDING_DEPARTMENT][OBLIGATIONS][ADDRESSABLE_OBLIGATIONS]  
-}
-
-process_bureau_BIC_addressability <- function()
-{
-#Loop through each BIC contracts 
-  #build addressability matrix
-  #produce addressability by each funding_agency
-  #results should be in the form:
-  #[CONTRACT_NAME][FUNDING_DEPARTMENT][FUNDING_AGENCY][OBLIGATIONS][ADDRESSABLE_OBLIGATIONS]  
-}
 
 process_gsa_contracts <- function(add_mode)
 { #declare vector accumulators for contract name, addressable obligations result and contract actual obligations 
@@ -194,16 +173,18 @@ process_bic_contracts <- function(add_mode)
   #set master_addressability_matrix up for recieving addressability matrices
   master_addressability_matrix <<- master_addressability_matrix[-1:rowcount, ]
   #declare and query list of BIC contracts
-  #STEP 1. Query official_bic_contract column for distinct BICs
-  bic_contract_list <- training_transactions %>% 
-    distinct(official_bic_contract) %>% na.omit() %>% collect() %>% .$official_bic_contract
+  #STEP 1. Query for distinct BICs
+  bic_contracts <- training_transactions %>% 
+          filter(business_rule_tier == "BIC") %>%
+          distinct(contract_name) %>% 
+          na.omit() %>% collect() %>% .$contract_name
   #STEP 2. Query contract_name column for BICs. This has to be done because contract names are different in the 
   # official_bic_contract column from the names used in the contract column
-  bic_contracts <<- training_transactions %>% 
-    filter(official_bic_contract %in% bic_contract_list) %>% 
-    distinct(contract_name) %>%
-    collect() %>% 
-    .$contract_name
+  #bic_contracts <<- training_transactions %>% 
+  #  filter(official_bic_contract %in% bic_contract_list) %>% 
+  #  distinct(contract_name) %>%
+  #  collect() %>% 
+  #  .$contract_name
   #set up sentinel for looping through GSA contracts 
   contract_count <- length(bic_contracts)
   for(i in 1:contract_count)

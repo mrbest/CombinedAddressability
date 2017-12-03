@@ -19,7 +19,7 @@ When you click the **Knit** button a document will be generated that includes bo
 source("addressabilityEffects.R")
 sc <- sparkInit()
 tic()
-load_spark_parquet("minimal_addrmrkt28NOV17.prq/")
+load_spark_parquet("minimal_addrmrkt30NOV17.prq/")
 toc()
 
 ```
