@@ -17,9 +17,9 @@ process_one_contract <- function(bic_or_gsa, add_mode, contract_name)
   file_contract_name <- gsub("/", "", contract_name)
   file_contract_name <- gsub(" ", "_", file_contract_name)
   file_contract_name <- gsub("-", "", file_contract_name)
-  write_csv(addressability_matrix, paste0(date_path,"/",file_contract_name, bic_or_gsa, add_mode, file_time_stamp, ".csv"))
+  write_csv(addressability_matrix, paste0(date_path,"/",file_contract_name,"_addr_matrix_", bic_or_gsa,"_",add_mode,"_", file_time_stamp, ".csv"))
   master_addressability_matrix <<- bind_rows(master_addressability_matrix, addressability_matrix)
-  result_df <- dplyr_gen_testPhase_df(add_mode, addressability_matrix, testing_transactions)
+  result_df <- dplyr_gen_testPhase_df(add_mode, addressability_matrix, testing_transactions, contract_name)
   
   addressability_result_row_count <- result_df %>% count()
   if(addressability_result_row_count >0 )
@@ -56,8 +56,8 @@ dplyr_gen_addressability_matrix_df <- function(add_mode, contract_label, trainin
 {
   #builds addressabbility matrix based on 6 factors
   addressability_matrix_df <-  training_df %>% filter(contract_name == contract_label) %>% 
-    distinct( contract_name, product_or_service_code, naics_code, sbg_flag, women_owned_flag, veteran_owned_flag, minority_owned_business_flag, foreign_government) %>%
-    arrange( product_or_service_code, naics_code, sbg_flag, women_owned_flag, veteran_owned_flag, minority_owned_business_flag, foreign_government) %>%
+    select(product_or_service_code,naics_code, sbg_flag, women_owned_flag, veteran_owned_flag, minority_owned_business_flag, foreign_government,  co_bus_size_determination_code,  foreign_funding_desc,  firm8a_joint_venture,  dot_certified_disadv_bus,  sdb,  sdb_flag,  hubzone_flag,  sheltered_workshop_flag, srdvob_flag,  other_minority_owned,  baob_flag,  aiob_flag,  naob_flag,  haob_flag,  saaob_flag,  emerging_small_business_flag,  wosb_flag,  edwosb_flag,  jvwosb_flag,  edjvwosb_flag) %>%
+    arrange( product_or_service_code,naics_code, sbg_flag, women_owned_flag, veteran_owned_flag, minority_owned_business_flag, foreign_government,  co_bus_size_determination_code,  foreign_funding_desc,  firm8a_joint_venture,  dot_certified_disadv_bus,  sdb,  sdb_flag,  hubzone_flag,  sheltered_workshop_flag, srdvob_flag,  other_minority_owned,  baob_flag,  aiob_flag,  naob_flag,  haob_flag,  saaob_flag,  emerging_small_business_flag,  wosb_flag,  edwosb_flag,  jvwosb_flag,  edjvwosb_flag) %>%
     collect()
   #adds addressability key to matrix post collection
   
@@ -67,18 +67,25 @@ dplyr_gen_addressability_matrix_df <- function(add_mode, contract_label, trainin
     mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
   }
   
-  else #mode="PSC_NAICS"
-  {
+  else if (add_mode == "CART_PROP")
+         {
     addressability_matrix_return <- addressability_matrix_df %>% 
-      mutate(addkey = paste0(product_or_service_code,"_",naics_code))
-  }
+      mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government, "_", co_bus_size_determination_code, "_", foreign_funding_desc, "_", firm8a_joint_venture, "_", dot_certified_disadv_bus, "_", sdb, "_", sdb_flag, "_", hubzone_flag, "_", sheltered_workshop_flag,"_", srdvob_flag, "_", other_minority_owned, "_", baob_flag, "_", aiob_flag, "_", naob_flag, "_", haob_flag, "_", saaob_flag, "_", emerging_small_business_flag, "_", wosb_flag, "_", edwosb_flag, "_", jvwosb_flag, "_", edjvwosb_flag))
+         }
+        else #mode="PSC_NAICS"
+        {
+        addressability_matrix_return <- addressability_matrix_df %>% 
+        mutate(addkey = paste0(product_or_service_code,"_",naics_code))
+        }
+    
+  
   
   addressability_matrix_return
 }
 
 
 
-dplyr_gen_testPhase_df <- function(add_mode, addressability_matrix, testing_df)
+dplyr_gen_testPhase_df <- function(add_mode, addressability_matrix, testing_df, contract_name)
 {
   #prevents summing of duplicate addressability matrix entries across multiple contracts in FAS ops
   addressability_matrix_addkey <- addressability_matrix %>% distinct(addkey) %>% .$addkey
@@ -88,13 +95,33 @@ dplyr_gen_testPhase_df <- function(add_mode, addressability_matrix, testing_df)
   addressability_test_result <- testing_df %>% 
                                 #filter(level_1_category_group == "GWCM") %>%#
                                 filter(addkey %in% addressability_matrix_addkey) %>% collect()
+  date_path <- gsub("-", "", Sys.Date())
+  dir.create(date_path)
+  file_time_stamp <- gsub(" ", "", Sys.time())
+  file_time_stamp <- gsub(":","", file_time_stamp)
+  file_contract_name <- gsub("/", "", contract_name)
+  file_contract_name <- gsub(" ", "_", file_contract_name)
+  file_contract_name <- gsub("-", "", file_contract_name)
+  
+  write_csv(addressability_test_result, paste0(date_path,"/", file_contract_name,"_resultdf_",add_mode,"_",file_time_stamp,".csv"))
                               }
-  else #mode="PSC_NAICS"
+  else if(add_mode == "PSC_NAICS")
+    #mode="PSC_NAICS"
   {
     addressability_test_result <- testing_df %>% 
       #filter(level_1_category_group == "GWCM") %>%#
       filter(case_addkey %in% addressability_matrix_addkey) %>% collect()
   }
+  else
+  {
+    #CART_PROP
+    addressability_test_result <- testing_df %>% 
+      #filter(level_1_category_group == "GWCM") %>%#
+      filter(case_addkey2 %in% addressability_matrix_addkey) %>% collect()
+  }
+  
+  
+  
   addressability_test_result
 }
 
