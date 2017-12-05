@@ -58,7 +58,7 @@ process_bic_contracts("ADDR_MRKT")
 toc()
 ```
 
-```{r BIC_Addressability Mode = ADDR_MRKT}
+```{r BIC_Addressability Mode = CART_PROP}
 tic()
 process_bic_contracts("CART_PROP")
 toc()
