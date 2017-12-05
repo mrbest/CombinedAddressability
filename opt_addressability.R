@@ -55,12 +55,12 @@ gen_distinct_bic_addressability_matrix_df <- function()
 dplyr_gen_addressability_matrix_df <- function(add_mode, contract_label, training_df)
 {
   #builds addressabbility matrix based on 6 factors
-  addressability_matrix_df <-  training_df %>% filter(contract_name == contract_label) %>% 
-    select(product_or_service_code,naics_code, sbg_flag, women_owned_flag, veteran_owned_flag, minority_owned_business_flag, foreign_government,  co_bus_size_determination_code,  foreign_funding_desc,  firm8a_joint_venture,  dot_certified_disadv_bus,  sdb,  sdb_flag,  hubzone_flag,  sheltered_workshop_flag, srdvob_flag,  other_minority_owned,  baob_flag,  aiob_flag,  naob_flag,  haob_flag,  saaob_flag,  emerging_small_business_flag,  wosb_flag,  edwosb_flag,  jvwosb_flag,  edjvwosb_flag) %>%
+  addressability_matrix_df <-  training_df %>% filter(contract_name == contract_label) %>%
     arrange( product_or_service_code,naics_code, sbg_flag, women_owned_flag, veteran_owned_flag, minority_owned_business_flag, foreign_government,  co_bus_size_determination_code,  foreign_funding_desc,  firm8a_joint_venture,  dot_certified_disadv_bus,  sdb,  sdb_flag,  hubzone_flag,  sheltered_workshop_flag, srdvob_flag,  other_minority_owned,  baob_flag,  aiob_flag,  naob_flag,  haob_flag,  saaob_flag,  emerging_small_business_flag,  wosb_flag,  edwosb_flag,  jvwosb_flag,  edjvwosb_flag) %>%
+    select(product_or_service_code,naics_code, sbg_flag, women_owned_flag, veteran_owned_flag, minority_owned_business_flag, foreign_government,  co_bus_size_determination_code,  foreign_funding_desc,  firm8a_joint_venture,  dot_certified_disadv_bus,  sdb,  sdb_flag,  hubzone_flag,  sheltered_workshop_flag, srdvob_flag,  other_minority_owned,  baob_flag,  aiob_flag,  naob_flag,  haob_flag,  saaob_flag,  emerging_small_business_flag,  wosb_flag,  edwosb_flag,  jvwosb_flag,  edjvwosb_flag) %>%
     collect()
   #adds addressability key to matrix post collection
-  
+  addressability_matrix_return <- addressability_matrix_df
   if(add_mode == "ADDR_MRKT"){
   
   addressability_matrix_return <- addressability_matrix_df %>% 
@@ -77,8 +77,7 @@ dplyr_gen_addressability_matrix_df <- function(add_mode, contract_label, trainin
         addressability_matrix_return <- addressability_matrix_df %>% 
         mutate(addkey = paste0(product_or_service_code,"_",naics_code))
         }
-    
-  
+  addressability_matrix_return <- addressability_matrix_return %>%distinct()  
   
   addressability_matrix_return
 }
