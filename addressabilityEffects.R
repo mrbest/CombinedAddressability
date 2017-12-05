@@ -118,6 +118,7 @@ process_FAS_Addressability <- function(add_mode)
   
 }
 
+
 agency_bic_addressable_obs <- function(bic, test_period_start, test_period_end)
 {
 #build addressability matrix  
@@ -155,8 +156,6 @@ process_gsa_contracts <- function(add_mode)
   gsa_result_df <- data_frame(contract_name_vector, actual_obligations_vector, addressable_market_vector)
   gsa_result_df
 }
-
-
 
 
 process_bic_contracts <- function(add_mode)

@@ -63,11 +63,61 @@ load_spark_csv <- function(sc, filename)
   raw_df <<- raw_df %>% mutate(minority_owned_business_flag = if_else(is.na(minority_owned_business_flag) == TRUE, "FALSE", minority_owned_business_flag))
   raw_df <<- raw_df %>% mutate(foreign_government = if_else(is.na(foreign_government) == TRUE, "FALSE", foreign_government))
   
+  raw_df <<- raw_df %>% mutate( co_bus_size_determination_code = if_else(is.na( co_bus_size_determination_code) == TRUE, "FALSE",  co_bus_size_determination_code))
+  raw_df <<- raw_df %>% mutate( foreign_funding_desc = if_else(is.na( foreign_funding_desc) == TRUE, "FALSE",  foreign_funding_desc))
+  #special case: not binary: account for "NOT APPLICABLE" 
+  raw_df <<- raw_df %>% mutate( foreign_funding_desc = if_else(foreign_funding_desc == "NOT APPLICABLE", "FALSE",  foreign_funding_desc))
+ 
+  
+  
+  raw_df <<- raw_df %>% mutate(firm8a_joint_venture = if_else(is.na(firm8a_joint_venture) == TRUE, "FALSE", firm8a_joint_venture))
+  raw_df <<- raw_df %>% mutate(dot_certified_disadv_bus = if_else(is.na(dot_certified_disadv_bus) == TRUE, "FALSE", dot_certified_disadv_bus))
+  raw_df <<- raw_df %>% mutate(sdb = if_else(is.na(sdb) == TRUE, "FALSE", sdb))
+  raw_df <<- raw_df %>% mutate(sdb_flag = if_else(is.na(sdb_flag) == TRUE, "FALSE", sdb_flag))
+  raw_df <<- raw_df %>% mutate(hubzone_flag = if_else(is.na(hubzone_flag) == TRUE, "FALSE", hubzone_flag))
+  raw_df <<- raw_df %>% mutate(sheltered_workshop_flag = if_else(is.na(sheltered_workshop_flag) == TRUE, "FALSE", sheltered_workshop_flag))
+  raw_df <<- raw_df %>% mutate(srdvob_flag = if_else(is.na(srdvob_flag) == TRUE, "FALSE", srdvob_flag))
+  raw_df <<- raw_df %>% mutate(other_minority_owned = if_else(is.na(other_minority_owned) == TRUE, "FALSE", other_minority_owned))
+  raw_df <<- raw_df %>% mutate(baob_flag = if_else(is.na(baob_flag) == TRUE, "FALSE", baob_flag))
+  raw_df <<- raw_df %>% mutate(aiob_flag = if_else(is.na(aiob_flag) == TRUE, "FALSE", aiob_flag))
+  raw_df <<- raw_df %>% mutate(naob_flag = if_else(is.na(naob_flag) == TRUE, "FALSE", naob_flag))
+  raw_df <<- raw_df %>% mutate(haob_flag = if_else(is.na(haob_flag) == TRUE, "FALSE", haob_flag))
+  raw_df <<- raw_df %>% mutate(saaob_flag = if_else(is.na(saaob_flag) == TRUE, "FALSE", saaob_flag))
+  raw_df <<- raw_df %>% mutate(emerging_small_business_flag = if_else(is.na(emerging_small_business_flag) == TRUE, "FALSE", emerging_small_business_flag))
+  raw_df <<- raw_df %>% mutate(wosb_flag = if_else(is.na(wosb_flag) == TRUE, "FALSE", wosb_flag))
+  raw_df <<- raw_df %>% mutate( edwosb_flag = if_else(is.na(edwosb_flag) == TRUE, "FALSE",  edwosb_flag))
+  raw_df <<- raw_df %>% mutate(jvwosb_flag = if_else(is.na(jvwosb_flag) == TRUE, "FALSE", jvwosb_flag))
+  raw_df <<- raw_df %>% mutate(edjvwosb_flag = if_else(is.na(edjvwosb_flag) == TRUE, "FALSE", edjvwosb_flag))
+  
+  ##if not NA re-code flag to flag name or FALSE
   raw_df <<- raw_df %>% mutate(sbg_flag = if_else(sbg_flag=="Y", "SBG", "FALSE"))
   raw_df <<- raw_df %>% mutate(women_owned_flag = if_else(women_owned_flag == "YES", "WO", "FALSE"))
   raw_df <<- raw_df %>% mutate(veteran_owned_flag = if_else(veteran_owned_flag == "YES", "VO", "FALSE"))
   raw_df <<- raw_df %>% mutate(minority_owned_business_flag = if_else(minority_owned_business_flag == "YES", "MB", "FALSE"))
   raw_df <<- raw_df %>% mutate(foreign_government = if_else(foreign_government == "YES", "FG", "FALSE"))
+  
+  raw_df <<- raw_df %>% mutate( co_bus_size_determination_code = if_else(co_bus_size_determination_code == "S", "CO_SB",  "FALSE"))
+  raw_df <<- raw_df %>% mutate( ff_fms = if_else(foreign_funding_desc == "FOREIGN FUNDS FMS", "FMS", "FALSE"))
+  #raw_df <<- raw_df %>% mutate( foreign_funding_desc = ( foreign_funding_desc == "YES", "FOR_FND",  "FALSE"))
+  #requires further eval based on how we will handle foreign funding
+  raw_df <<- raw_df %>% mutate(firm8a_joint_venture = if_else(firm8a_joint_venture == "YES", "F8AJV", "FALSE"))
+  raw_df <<- raw_df %>% mutate(dot_certified_disadv_bus = if_else(dot_certified_disadv_bus == "YES", "DOTCDB", "FALSE"))
+  raw_df <<- raw_df %>% mutate(sdb = if_else(sdb == "YES", "SDB", "FALSE"))
+  raw_df <<- raw_df %>% mutate(sdb_flag = if_else(sdb_flag == "YES", "SDB_FLAG", "FALSE"))
+  raw_df <<- raw_df %>% mutate(hubzone_flag = if_else(hubzone_flag == "YES", "HUBZ", "FALSE"))
+  raw_df <<- raw_df %>% mutate(sheltered_workshop_flag = if_else(sheltered_workshop_flag == "YES", "SWS", "FALSE"))
+  raw_df <<- raw_df %>% mutate(srdvob_flag = if_else(srdvob_flag == "YES", "SRDVOB", "FALSE"))
+  raw_df <<- raw_df %>% mutate(other_minority_owned = if_else(other_minority_owned == "YES", "OMO", "FALSE"))
+  raw_df <<- raw_df %>% mutate(baob_flag = if_else(baob_flag == "YES", "BAOB", "FALSE"))
+  raw_df <<- raw_df %>% mutate(aiob_flag = if_else(aiob_flag == "YES", "AIOB", "FALSE"))
+  raw_df <<- raw_df %>% mutate(naob_flag = if_else(naob_flag == "YES", "NAOB", "FALSE"))
+  raw_df <<- raw_df %>% mutate(haob_flag = if_else(haob_flag == "YES", "HAOB", "FALSE"))
+  raw_df <<- raw_df %>% mutate(saaob_flag = if_else(saaob_flag == "YES", "SAAOB", "FALSE"))
+  raw_df <<- raw_df %>% mutate(emerging_small_business_flag = if_else(emerging_small_business_flag == "YES", "ESB", "FALSE"))
+  raw_df <<- raw_df %>% mutate(wosb_flag = if_else(wosb_flag == "YES", "WOSB", "FALSE"))
+  raw_df <<- raw_df %>% mutate( edwosb_flag = if_else(edwosb_flag == "YES", "EDWOSB",  "FALSE"))
+  raw_df <<- raw_df %>% mutate(jvwosb_flag = if_else(jvwosb_flag == "YES", "JVWOSB", "FALSE"))
+  raw_df <<- raw_df %>% mutate(edjvwosb_flag = if_else(edjvwosb_flag == "YES", "EDJVWOSB", "FALSE"))
   
   print("Creating add_key for all transactions")
   #filter by date range to only have FY16
@@ -93,29 +143,43 @@ load_spark_parquet <- function(archive)
   training_transactions <- raw_df %>% filter(as.Date(date_signed) >= as.Date("2012-10-01") & as.Date(date_signed) <= as.Date("2017-09-30")) 
   training_transactions <- training_transactions %>% mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
   training_transactions <<- training_transactions %>% mutate(case_addkey = paste0(product_or_service_code,"_",naics_code))
+  training_transactions <<- training_transactions %>% mutate(case_addkey2 = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government, "_", co_bus_size_determination_code, "_", foreign_funding_desc, "_", firm8a_joint_venture, "_", dot_certified_disadv_bus, "_", sdb, "_", sdb_flag, "_", hubzone_flag, "_", sheltered_workshop_flag,"_", srdvob_flag, "_", other_minority_owned, "_", baob_flag, "_", aiob_flag, "_", naob_flag, "_", haob_flag, "_", saaob_flag, "_", emerging_small_business_flag, "_", wosb_flag, "_", edwosb_flag, "_", jvwosb_flag, "_", edjvwosb_flag))
+
   
   print("subsetting testing transactions")
   fy13testing_transactions <- raw_df %>% filter(as.Date(date_signed) >= as.Date("2012-10-01") & as.Date(date_signed) <= as.Date("2013-09-30")) 
   fy13testing_transactions <- fy13testing_transactions %>% mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
   fy13testing_transactions <<- fy13testing_transactions %>% mutate(case_addkey = paste0(product_or_service_code,"_",naics_code))
+  fy13testing_transactions <<- fy13testing_transactions %>% mutate(case_addkey2 = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government, "_", co_bus_size_determination_code, "_", foreign_funding_desc, "_", firm8a_joint_venture, "_", dot_certified_disadv_bus, "_", sdb, "_", sdb_flag, "_", hubzone_flag, "_", sheltered_workshop_flag,"_", srdvob_flag, "_", other_minority_owned, "_", baob_flag, "_", aiob_flag, "_", naob_flag, "_", haob_flag, "_", saaob_flag, "_", emerging_small_business_flag, "_", wosb_flag, "_", edwosb_flag, "_", jvwosb_flag, "_", edjvwosb_flag))
+
   
   fy14testing_transactions <- raw_df %>% filter(as.Date(date_signed) >= as.Date("2013-10-01") & as.Date(date_signed) <= as.Date("2014-09-30")) 
   fy14testing_transactions <- fy14testing_transactions %>% mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
   fy14testing_transactions <<- fy14testing_transactions %>% mutate(case_addkey = paste0(product_or_service_code,"_",naics_code))
+  fy14testing_transactions <<- fy14testing_transactions %>% mutate(case_addkey2 = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government, "_", co_bus_size_determination_code, "_", foreign_funding_desc, "_", firm8a_joint_venture, "_", dot_certified_disadv_bus, "_", sdb, "_", sdb_flag, "_", hubzone_flag, "_", sheltered_workshop_flag,"_", srdvob_flag, "_", other_minority_owned, "_", baob_flag, "_", aiob_flag, "_", naob_flag, "_", haob_flag, "_", saaob_flag, "_", emerging_small_business_flag, "_", wosb_flag, "_", edwosb_flag, "_", jvwosb_flag, "_", edjvwosb_flag))
+
+  
   
   fy15testing_transactions <- raw_df %>% filter(as.Date(date_signed) >= as.Date("2014-10-01") & as.Date(date_signed) <= as.Date("2015-09-30")) 
   fy15testing_transactions <- fy15testing_transactions %>% mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
   fy15testing_transactions <<- fy15testing_transactions %>% mutate(case_addkey = paste0(product_or_service_code,"_",naics_code))
+  fy15testing_transactions <<- fy15testing_transactions %>% mutate(case_addkey2 = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government, "_", co_bus_size_determination_code, "_", foreign_funding_desc, "_", firm8a_joint_venture, "_", dot_certified_disadv_bus, "_", sdb, "_", sdb_flag, "_", hubzone_flag, "_", sheltered_workshop_flag,"_", srdvob_flag, "_", other_minority_owned, "_", baob_flag, "_", aiob_flag, "_", naob_flag, "_", haob_flag, "_", saaob_flag, "_", emerging_small_business_flag, "_", wosb_flag, "_", edwosb_flag, "_", jvwosb_flag, "_", edjvwosb_flag))
+
   
   fy16testing_transactions <- raw_df %>% filter(as.Date(date_signed) >= as.Date("2015-10-01") & as.Date(date_signed) <= as.Date("2016-09-30")) 
   fy16testing_transactions <- fy16testing_transactions %>% mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
   fy16testing_transactions <<- fy16testing_transactions %>% mutate(case_addkey = paste0(product_or_service_code,"_",naics_code))
+  fy16testing_transactions <<- fy16testing_transactions %>% mutate(case_addkey2 = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government, "_", co_bus_size_determination_code, "_", foreign_funding_desc, "_", firm8a_joint_venture, "_", dot_certified_disadv_bus, "_", sdb, "_", sdb_flag, "_", hubzone_flag, "_", sheltered_workshop_flag,"_", srdvob_flag, "_", other_minority_owned, "_", baob_flag, "_", aiob_flag, "_", naob_flag, "_", haob_flag, "_", saaob_flag, "_", emerging_small_business_flag, "_", wosb_flag, "_", edwosb_flag, "_", jvwosb_flag, "_", edjvwosb_flag))
+
+                                                                     
   testing_transactions <- fy16testing_transactions
+  testing_transactions <- testing_transactions %>% mutate(case_addkey2 = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government, "_", co_bus_size_determination_code, "_", foreign_funding_desc, "_", firm8a_joint_venture, "_", dot_certified_disadv_bus, "_", sdb, "_", sdb_flag, "_", hubzone_flag, "_", sheltered_workshop_flag,"_", srdvob_flag, "_", other_minority_owned, "_", baob_flag, "_", aiob_flag, "_", naob_flag, "_", haob_flag, "_", saaob_flag, "_", emerging_small_business_flag, "_", wosb_flag, "_", edwosb_flag, "_", jvwosb_flag, "_", edjvwosb_flag))
   testing_transactions <<- testing_transactions %>% mutate(case_addkey = paste0(product_or_service_code,"_",naics_code))
   
   fy17testing_transactions <- raw_df %>% filter(as.Date(date_signed) >= as.Date("2016-10-01") & as.Date(date_signed) <= as.Date("2017-09-30")) 
   fy17testing_transactions <- fy17testing_transactions %>% mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
   fy17testing_transactions <<- fy17testing_transactions %>% mutate(case_addkey = paste0(product_or_service_code,"_",naics_code))
-  
+  fy17testing_transactions <<- fy17testing_transactions %>% mutate(case_addkey2 = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government, "_", co_bus_size_determination_code, "_", foreign_funding_desc, "_", firm8a_joint_venture, "_", dot_certified_disadv_bus, "_", sdb, "_", sdb_flag, "_", hubzone_flag, "_", sheltered_workshop_flag,"_", srdvob_flag, "_", other_minority_owned, "_", baob_flag, "_", aiob_flag, "_", naob_flag, "_", haob_flag, "_", saaob_flag, "_", emerging_small_business_flag, "_", wosb_flag, "_", edwosb_flag, "_", jvwosb_flag, "_", edjvwosb_flag))
+
   
 }
