@@ -1,58 +1,103 @@
 source("opt_addressability.R")
 
-process_FAS_Addressability <- function(add_mode)
-{print("Generating FAS addressability matrix")
-  if(add_mode == "ADDR_MRKT"){
-                          print(paste0("FAS addressability mode = ", add_mode))
-                          tic()
-                          fas_base_addressability_matrix <- FAS_dplyr_gen_addressability_matrix_df("^GS..[FKQT]")
-                          fas_instruments_addressability_matrix <- FAS_inst_frm_sched_dplyr_gen_addressability_matrix_df("^GS..[FKQT]")
-                          toc()
-                          }
-  else #mode="PSC_NAICS"
-                          {
-                          print(paste0("FAS addressability mode = ", add_mode)) 
-                          tic()
-                          fas_base_addressability_matrix <- FAS_PSC_NAICS_dplyr_gen_addressability_matrix_df("^GS..[FKQT]")
-                          fas_instruments_addressability_matrix <- FAS_PSC_NAICS_inst_frm_sched_dplyr_gen_addressability_matrix_df("^GS..[FKQT]")
-                          toc()
-                          }
-  print("Removing NA PSC and NAICS observations")
+process_FAS_Addressability <- function(add_mode, training_start_date, training_end_date)
+{
+  print("subsetting testing transactions")
+  fy13testing_transactions <- raw_df %>% filter(as.Date(date_signed) >= as.Date("2012-10-01") & as.Date(date_signed) <= as.Date("2013-09-30")) 
+  fy13testing_transactions <- fy13testing_transactions %>% mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
+  fy13testing_transactions <- fy13testing_transactions %>% mutate(psc_naics_key = paste0(product_or_service_code,"_",naics_code))
+  fy13testing_transactions <- fy13testing_transactions %>% mutate(case_multikey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government, "_", co_bus_size_determination_code, "_", foreign_funding_desc, "_", firm8a_joint_venture, "_", dot_certified_disadv_bus, "_", sdb, "_", sdb_flag, "_", hubzone_flag, "_", sheltered_workshop_flag,"_", srdvob_flag, "_", other_minority_owned, "_", baob_flag, "_", aiob_flag, "_", naob_flag, "_", haob_flag, "_", saaob_flag, "_", emerging_small_business_flag, "_", wosb_flag, "_", edwosb_flag, "_", jvwosb_flag, "_", edjvwosb_flag))
+  
+  
+  fy14testing_transactions <- raw_df %>% filter(as.Date(date_signed) >= as.Date("2013-10-01") & as.Date(date_signed) <= as.Date("2014-09-30")) 
+  fy14testing_transactions <- fy14testing_transactions %>% mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
+  fy14testing_transactions <- fy14testing_transactions %>% mutate(psc_naics_key = paste0(product_or_service_code,"_",naics_code))
+  fy14testing_transactions <- fy14testing_transactions %>% mutate(case_multikey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government, "_", co_bus_size_determination_code, "_", foreign_funding_desc, "_", firm8a_joint_venture, "_", dot_certified_disadv_bus, "_", sdb, "_", sdb_flag, "_", hubzone_flag, "_", sheltered_workshop_flag,"_", srdvob_flag, "_", other_minority_owned, "_", baob_flag, "_", aiob_flag, "_", naob_flag, "_", haob_flag, "_", saaob_flag, "_", emerging_small_business_flag, "_", wosb_flag, "_", edwosb_flag, "_", jvwosb_flag, "_", edjvwosb_flag))
+  
+  
+  
+  fy15testing_transactions <- raw_df %>% filter(as.Date(date_signed) >= as.Date("2014-10-01") & as.Date(date_signed) <= as.Date("2015-09-30")) 
+  fy15testing_transactions <- fy15testing_transactions %>% mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
+  fy15testing_transactions <- fy15testing_transactions %>% mutate(psc_naics_key = paste0(product_or_service_code,"_",naics_code))
+  fy15testing_transactions <- fy15testing_transactions %>% mutate(case_multikey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government, "_", co_bus_size_determination_code, "_", foreign_funding_desc, "_", firm8a_joint_venture, "_", dot_certified_disadv_bus, "_", sdb, "_", sdb_flag, "_", hubzone_flag, "_", sheltered_workshop_flag,"_", srdvob_flag, "_", other_minority_owned, "_", baob_flag, "_", aiob_flag, "_", naob_flag, "_", haob_flag, "_", saaob_flag, "_", emerging_small_business_flag, "_", wosb_flag, "_", edwosb_flag, "_", jvwosb_flag, "_", edjvwosb_flag))
+  
+  
+  fy16testing_transactions <- raw_df %>% filter(as.Date(date_signed) >= as.Date("2015-10-01") & as.Date(date_signed) <= as.Date("2016-09-30")) 
+  fy16testing_transactions <- fy16testing_transactions %>% mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
+  fy16testing_transactions <- fy16testing_transactions %>% mutate(psc_naics_key = paste0(product_or_service_code,"_",naics_code))
+  fy16testing_transactions <- fy16testing_transactions %>% mutate(case_multikey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government, "_", co_bus_size_determination_code, "_", foreign_funding_desc, "_", firm8a_joint_venture, "_", dot_certified_disadv_bus, "_", sdb, "_", sdb_flag, "_", hubzone_flag, "_", sheltered_workshop_flag,"_", srdvob_flag, "_", other_minority_owned, "_", baob_flag, "_", aiob_flag, "_", naob_flag, "_", haob_flag, "_", saaob_flag, "_", emerging_small_business_flag, "_", wosb_flag, "_", edwosb_flag, "_", jvwosb_flag, "_", edjvwosb_flag))
+
+  fy17testing_transactions <- raw_df %>% filter(as.Date(date_signed) >= as.Date("2016-10-01") & as.Date(date_signed) <= as.Date("2017-09-30")) 
+  fy17testing_transactions <- fy17testing_transactions %>% mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
+  fy17testing_transactions <- fy17testing_transactions %>% mutate(psc_naics_key = paste0(product_or_service_code,"_",naics_code))
+  fy17testing_transactions <- fy17testing_transactions %>% mutate(case_multikey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government, "_", co_bus_size_determination_code, "_", foreign_funding_desc, "_", firm8a_joint_venture, "_", dot_certified_disadv_bus, "_", sdb, "_", sdb_flag, "_", hubzone_flag, "_", sheltered_workshop_flag,"_", srdvob_flag, "_", other_minority_owned, "_", baob_flag, "_", aiob_flag, "_", naob_flag, "_", haob_flag, "_", saaob_flag, "_", emerging_small_business_flag, "_", wosb_flag, "_", edwosb_flag, "_", jvwosb_flag, "_", edjvwosb_flag))  
+
+  print("Generating FAS addressability matrix")
+#  if(add_mode == "ADDR_MRKT"){
+#                          print(paste0("FAS addressability mode = ", add_mode))
+#                          tic()
+#                          fas_base_addressability_matrix <- FAS_dplyr_gen_addressability_matrix_df(add_mode)
+#                          #fas_instruments_addressability_matrix <- FAS_inst_frm_sched_dplyr_gen_addressability_matrix_df("^GS..[FKQT]")
+#                          toc()
+#                          }
+#  else if (add_mode == "PSC_NAICS")
+#                          {
+#                          print(paste0("FAS addressability mode = ", add_mode)) 
+#                          tic()
+#                          fas_base_addressability_matrix <- FAS_dplyr_gen_addressability_matrix_df(add_mode)
+#                          fas_instruments_addressability_matrix <- FAS_PSC_NAICS_inst_frm_sched_dplyr_gen_addressability_matrix_df("^GS..[FKQT]")
+#                          toc()
+#                          }
+#  else #add_mode == "CASE_PROP"
+#                          {
+#                            print(paste0("FAS addressability mode = ", add_mode)) 
+#                            tic()
+#                            fas_base_addressability_matrix <- FAS_PSC_NAICS_dplyr_gen_addressability_matrix_df("^GS..[FKQT]")
+#                            fas_instruments_addressability_matrix <- FAS_PSC_NAICS_inst_frm_sched_dplyr_gen_addressability_matrix_df("^GS..[FKQT]")
+#                            toc()
+#                           }
+  print(paste0("FAS addressability matrix production mode = ", add_mode))
   tic()
-  fas_instruments_addressability_matrix <- fas_instruments_addressability_matrix %>%
-                                           filter(is.na(product_or_service_code) == FALSE & is.na(naics_code) == FALSE)
-  fas_base_addressability_matrix <- fas_base_addressability_matrix %>% 
-                                    filter(is.na(product_or_service_code) == FALSE & is.na(naics_code) == FALSE)
+  fas_addressability_matrix <- FAS_dplyr_gen_addressability_matrix_df(add_mode, training_start_date, training_end_date)
   toc()
   
-  print("Binding addressable matrices for FAS and FAS schedule derived instruments ")
-  tic()
-  fas_addressability_matrix <- bind_rows(fas_base_addressability_matrix, fas_instruments_addressability_matrix)
-  toc()
   
-  write_csv(fas_addressability_matrix, paste0(add_mode,"_FAS_Addressability_Matrix",".csv"))
+  #print("Removing NA PSC and NAICS observations")
+  #tic()
+  #fas_instruments_addressability_matrix <- fas_instruments_addressability_matrix %>%
+  #                                         filter(is.na(product_or_service_code) == FALSE & is.na(naics_code) == FALSE)
+  #fas_base_addressability_matrix <- fas_base_addressability_matrix %>% 
+  #                                  filter(is.na(product_or_service_code) == FALSE & is.na(naics_code) == FALSE)
+  #toc()
+  
+  #print("Binding addressable matrices for FAS and FAS schedule derived instruments ")
+  #tic()
+  #fas_addressability_matrix <- bind_rows(fas_base_addressability_matrix, fas_instruments_addressability_matrix)
+  #toc()
+  
+  
   #OR 
   #re-write FAS_dplyr_gen_addressability_matrix_df() such that it also performs the FAS sourced BPA function to augment the 
   # fas_addressability_matrix
   print("Generating FY13 addressability")
   tic()
-  fy13fas_addressability_df <<- dplyr_gen_testPhase_df(add_mode, fas_addressability_matrix, fy13testing_transactions)
+  fy13fas_addressability_df <<- dplyr_gen_testPhase_df(add_mode, fas_addressability_matrix, fy13testing_transactions, "FAS_FY13")
   toc()
   print("Generating FY14 addressability")
   tic()
-  fy14fas_addressability_df <<- dplyr_gen_testPhase_df(add_mode, fas_addressability_matrix, fy14testing_transactions)
+  fy14fas_addressability_df <<- dplyr_gen_testPhase_df(add_mode, fas_addressability_matrix, fy14testing_transactions, "FAS_FY14")
   toc()
   print("Generating FY15 addressability")
   tic()
-  fy15fas_addressability_df <<- dplyr_gen_testPhase_df(add_mode, fas_addressability_matrix, fy15testing_transactions)
+  fy15fas_addressability_df <<- dplyr_gen_testPhase_df(add_mode, fas_addressability_matrix, fy15testing_transactions, "FAS_FY15")
   toc()
   print("Generating FY16 addressability")
   tic()
-  fy16fas_addressability_df <<- dplyr_gen_testPhase_df(add_mode, fas_addressability_matrix, fy16testing_transactions)
+  fy16fas_addressability_df <<- dplyr_gen_testPhase_df(add_mode, fas_addressability_matrix, fy16testing_transactions, "FAS_FY16")
   toc()
   print("Generating FY17 addressability")
   tic()
-  fy17fas_addressability_df <<- dplyr_gen_testPhase_df(add_mode, fas_addressability_matrix, fy17testing_transactions)
+  fy17fas_addressability_df <<- dplyr_gen_testPhase_df(add_mode, fas_addressability_matrix, fy17testing_transactions, "FAS_FY17")
   toc()
   
   total_addressability <- double()
@@ -89,23 +134,23 @@ process_FAS_Addressability <- function(add_mode)
   
   print("Capturing FY13 external FAS instrument Obligations")
   tic()
-  fas_fy13_bpa_awards <- capture_FAS_Dependent_BPA_Training_Awards("^GS..[FKQT]", "2012-10-01", "2013-09-30")
+  fas_fy13_bpa_awards <- capture_FAS_Sched_Dependent_Training_Awards("^GS..[FKQT]", "2012-10-01", "2013-09-30")
   toc()
   print("Capturing FY14 external FAS instrument Obligations")
   tic()
-  fas_fy14_bpa_awards <- capture_FAS_Dependent_BPA_Training_Awards("^GS..[FKQT]", "2013-10-01", "2014-09-30")
+  fas_fy14_bpa_awards <- capture_FAS_Sched_Dependent_Training_Awards("^GS..[FKQT]", "2013-10-01", "2014-09-30")
   toc()
   print("Capturing FY15 external FAS instrument Obligations")
   tic()
-  fas_fy15_bpa_awards <- capture_FAS_Dependent_BPA_Training_Awards("^GS..[FKQT]", "2014-10-01", "2015-09-30")
+  fas_fy15_bpa_awards <- capture_FAS_Sched_Dependent_Training_Awards("^GS..[FKQT]", "2014-10-01", "2015-09-30")
   toc()
   print("Capturing FY16 external FAS instrument Obligations")
   tic()
-  fas_fy16_bpa_awards <- capture_FAS_Dependent_BPA_Training_Awards("^GS..[FKQT]", "2015-10-01", "2016-09-30")
+  fas_fy16_bpa_awards <- capture_FAS_Sched_Dependent_Training_Awards("^GS..[FKQT]", "2015-10-01", "2016-09-30")
   toc()
   print("Capturing FY17 external FAS instrument Obligations")
   tic()
-  fas_fy17_bpa_awards <- capture_FAS_Dependent_BPA_Training_Awards("^GS..[FKQT]", "2016-10-01", "2017-09-30")
+  fas_fy17_bpa_awards <- capture_FAS_Sched_Dependent_Training_Awards("^GS..[FKQT]", "2016-10-01", "2017-09-30")
   toc()
   fas_bpa_obligations <- c(fas_fy13_bpa_awards%>%select(dollars_obligated)%>%collect()%>%sum(), fas_fy14_bpa_awards%>%select(dollars_obligated)%>%collect()%>%sum(), fas_fy15_bpa_awards%>%select(dollars_obligated)%>%collect()%>%sum(), fas_fy16_bpa_awards%>%select(dollars_obligated)%>%collect()%>%sum(), fas_fy17_bpa_awards%>%select(dollars_obligated)%>%collect()%>%sum())
   fas_total_obligations <- fas_actual_obligations+fas_bpa_obligations
