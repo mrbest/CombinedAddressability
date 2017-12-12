@@ -37,6 +37,48 @@ process_one_contract <- function(bic_or_gsa, add_mode, contract_name)
   addressability_result
 }
 
+process_agency_agg_bic_addressability <- function(agency_name, agency_testing_transactions)
+{
+  #build composite BIC addressability matrix
+  #get bic from testing list 
+  bic_contracts <- testing_transactions %>% 
+    filter(business_rule_tier == "BIC") %>%
+    distinct(contract_name) %>% 
+    na.omit() %>% collect() %>% .$contract_name
+  
+  composite_addressability_matrix <- dplyr_gen_addressability_matrix_df("CART_PROP", bic_contracts, training_transactions)
+  composite_addressability_matrix <- composite_addressability_matrix %>% filter(is.na(product_or_service_code) == FALSE & is.na(naics_code) == FALSE) %>%
+    distinct(product_or_service_code, naics_code, addkey)
+  
+  date_path <- gsub("-", "", Sys.Date())
+  dir.create(date_path)
+  dir.create(paste0(date_path,"/matrices"))
+  file_time_stamp <- gsub(" ", "", Sys.time())
+  file_time_stamp <- gsub(":","", file_time_stamp)
+  file_contract_name <- gsub("/", "", "bic_composite")
+  file_contract_name <- gsub(" ", "_", file_contract_name)
+  file_contract_name <- gsub("-", "", file_contract_name)
+  write_csv(composite_addressability_matrix, paste0(date_path,"/matrices/",file_contract_name,"_matrix_", file_time_stamp, ".csv"))
+  
+  result_df <- dplyr_gen_testPhase_df("CART_PROP)", composite_addressability_matrix, agency_testing_transactions, agency_name)
+  
+  addressability_result_row_count <- result_df %>% count()
+  if(addressability_result_row_count >0 )
+  {
+    addressability_result <- result_df %>% select(dollars_obligated)%>% sum()
+  }
+  else
+  {
+    addressability_result <- 0
+  }
+  
+  #actual_obligations <<- opt_get_contract_totals(contract_name)
+  addressability_result_formatted <- to_currency(addressability_result, currency_symbol = "$", symbol_first = TRUE, group_size = 3, group_delim = ",", decimal_size = 2,decimal_delim = ".")
+  print(paste0( agency_name," addressable spend is : ", addressability_result_formatted))
+  result_df
+  
+}
+
 process_one_agency <- function(agency_name)
 {
   
@@ -56,7 +98,7 @@ gen_distinct_bic_addressability_matrix_df <- function()
 dplyr_gen_addressability_matrix_df <- function(add_mode, contract_label, training_df)
 {
   #builds addressabbility matrix based on 6 factors
-  addressability_matrix_df <-  training_df %>% filter(contract_name == contract_label) %>%
+  addressability_matrix_df <-  training_df %>% filter(contract_name %in% contract_label) %>%
     arrange( product_or_service_code,naics_code, sbg_flag, women_owned_flag, veteran_owned_flag, minority_owned_business_flag, foreign_government,  co_bus_size_determination_code,  foreign_funding_desc,  firm8a_joint_venture,  dot_certified_disadv_bus,  sdb,  sdb_flag,  hubzone_flag,  sheltered_workshop_flag, srdvob_flag,  other_minority_owned,  baob_flag,  aiob_flag,  naob_flag,  haob_flag,  saaob_flag,  emerging_small_business_flag,  wosb_flag,  edwosb_flag,  jvwosb_flag,  edjvwosb_flag) %>%
     select(product_or_service_code,naics_code, sbg_flag, women_owned_flag, veteran_owned_flag, minority_owned_business_flag, foreign_government,  co_bus_size_determination_code,  foreign_funding_desc,  firm8a_joint_venture,  dot_certified_disadv_bus,  sdb,  sdb_flag,  hubzone_flag,  sheltered_workshop_flag, srdvob_flag,  other_minority_owned,  baob_flag,  aiob_flag,  naob_flag,  haob_flag,  saaob_flag,  emerging_small_business_flag,  wosb_flag,  edwosb_flag,  jvwosb_flag,  edjvwosb_flag) %>%
     collect()
@@ -226,79 +268,11 @@ FAS_dplyr_gen_addressability_matrix_df <- function(addr_mode, start_date, end_da
   addressability_matrix_return
 }
 
-##FAS_PSC_NAICS_dplyr_gen_addressability_matrix_df <- function(regex_pattern)
-##{
-##  fas_awards <- capture_FAS_Training_Awards("^GS..[FKQT]", "2013-10-01", "2016-09-30")
-  #builds addressabbility matrix based on 6 factors
-##  fas_ref_piids <- fas_awards%>% select(reference_piid) %>% distinct() %>% collect() %>% .$reference_piid
-##  addressability_matrix_df <-  raw_df %>% filter(as.Date(date_signed) >= as.Date("2013-10-01") & as.Date(date_signed) <= as.Date("2016-09-30")) %>%
-##    filter(reference_piid %in% fas_ref_piids) %>% 
-##    distinct( contract_name, product_or_service_code, naics_code) %>%
-##    arrange( product_or_service_code, naics_code) %>%
-##    collect()
-  #adds addressability key to matrix post collection
-##  addressability_matrix_return <- addressability_matrix_df %>% 
-##    mutate(addkey = paste0(product_or_service_code,"_",naics_code) )
-##  addressability_matrix_return
-##}
-
-
-##FAS_Sched_Dependent_dplyr_gen_addressability_matrix_df <- function(regex_pattern)
-#{ ##Add FAS BPA Awards to this matrix
-##  fas_awards <- capture_FAS_Dependent_BPA_Training_Awards("^GS..[FKQT]", "2013-10-01", "2016-09-30")
-  #builds addressabbility matrix based on 6 factors
-##  fas_ref_piids <- fas_awards%>% select(reference_piid) %>% distinct() %>% collect() %>% .$reference_piid
-##  addressability_matrix_df <-  raw_df %>% filter(as.Date(date_signed) >= as.Date("2013-10-01") & as.Date(date_signed) <= as.Date("2016-09-30")) %>%
-##    filter(reference_piid %in% fas_ref_piids) %>% 
-##    distinct( contract_name, product_or_service_code, naics_code, sbg_flag, women_owned_flag, veteran_owned_flag, minority_owned_business_flag, foreign_government) %>%
-##    arrange( product_or_service_code, naics_code, sbg_flag, women_owned_flag, veteran_owned_flag, minority_owned_business_flag, foreign_government) %>%
-##    collect()
-  #adds addressability key to matrix post collection
-##  addressability_matrix_return <- addressability_matrix_df %>% 
-##    mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
-##  addressability_matrix_return
-##}
-
-##FAS_PSC_NAICS_Sched_Dependent_dplyr_gen_addressability_matrix_df <- function(regex_pattern)
-##{ ##Add FAS BPA Awards to this matrix
-##  fas_awards <- capture_FAS_Dependent_BPA_Training_Awards("^GS..[FKQT]", "2013-10-01", "2016-09-30")
-  #builds addressabbility matrix based on 6 factors
-##  fas_ref_piids <- fas_awards%>% select(reference_piid) %>% distinct() %>% collect() %>% .$reference_piid
-##  addressability_matrix_df <-  raw_df %>% filter(as.Date(date_signed) >= as.Date("2013-10-01") & as.Date(date_signed) <= as.Date("2016-09-30")) %>%
-##    filter(reference_piid %in% fas_ref_piids) %>% 
-##    distinct( contract_name, product_or_service_code, naics_code) %>%
-##    arrange( product_or_service_code, naics_code) %>%
-##    collect()
-  #adds addressability key to matrix post collection
-##  addressability_matrix_return <- addressability_matrix_df %>% 
-##    mutate(addkey = paste0(product_or_service_code,"_",naics_code) )
-##  addressability_matrix_return
-##}
-
-#FAS_PSC_NAICS_Sched_Dependent_dplyr_gen_addressability_matrix_df <- function(regex_pattern)
-#{ ##Add FAS BPA Awards to this matrix
-#  fas_awards <- capture_FAS_Dependent_BPA_Training_Awards("^GS..[FKQT]", "2013-10-01", "2016-09-30")
-  #builds addressabbility matrix based on 6 factors
-#  fas_ref_piids <- fas_awards%>% select(reference_piid) %>% distinct() %>% collect() %>% .$reference_piid
-#  addressability_matrix_df <-  raw_df %>% filter(as.Date(date_signed) >= as.Date("2013-10-01") & as.Date(date_signed) <= as.Date("2016-09-30")) %>%
-#    filter(reference_piid %in% fas_ref_piids) %>% 
-#    distinct( contract_name, product_or_service_code, naics_code, sbg_flag, women_owned_flag, veteran_owned_flag, minority_owned_business_flag, foreign_government) %>%
-#    arrange( product_or_service_code, naics_code, sbg_flag, women_owned_flag, veteran_owned_flag, minority_owned_business_flag, foreign_government) %>%
-#    collect()
-  #adds addressability key to matrix post collection
-#  addressability_matrix_return <- addressability_matrix_df %>% 
-#    mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
-#  addressability_matrix_return
-#}
-
-
-
-
 opt_get_contract_totals <- function(contract_label)
 {
   contract_total_obligations = -1
   contract_total_obligations_count <- testing_transactions %>% 
-         filter(contract_name == contract_label) %>% 
+         filter(contract_name %in% contract_label) %>% 
          select(dollars_obligated) %>% count() %>% collect() %>% .$n
      if(contract_total_obligations_count > 0 )
      {

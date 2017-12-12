@@ -16,8 +16,8 @@ When you click the **Knit** button a document will be generated that includes bo
 ```{r loadfromcsv}
 source("opt_addressability.R")
 sc <- sparkInit()
-load_spark_csv(sc, "../../GWCM_Extracts/GWCM_FPDS_FY13_PRESENT_NOV_13.tsv")
-spark_write_parquet(raw_df, path = "13Nov17FY13_17.prq")
+load_spark_csv(sc, "../../GWCM_Extracts/GWCM_FPDS_FY13_PRESENT_DEC_04.tsv")
+spark_write_parquet(raw_df, path = "04DEC17FY13_17.prq")
 ```
 
 ```{r store_to_parquet}

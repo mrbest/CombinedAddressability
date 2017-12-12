@@ -19,7 +19,8 @@ When you click the **Knit** button a document will be generated that includes bo
 source("addressabilityEffects.R")
 sc <- sparkInit()
 tic()
-load_spark_parquet("minimal_addrmrkt_04DEC17.prq/")
+#load_spark_parquet("minimal_addrmrkt_04DEC17.prq/")
+load_spark_parquet("04DEC17FY13_17.prq/")
 toc()
 
 ```
@@ -59,23 +60,24 @@ toc()
 ```
 
 
-
-
-
-
-
 ```{r BIC_Addressability Mode = ADDR_MRKT}
 tic()
-process_bic_contracts("ADDR_MRKT")
+bic_PSC_NAICS_addrMarketSummary <- process_bic_contracts("ADDR_MRKT")
+write_csv(bic_PSC_NAICS_addrMarketSummary, "bic_PSC_NAICS_Summary.csv")
 toc()
 ```
 
 ```{r BIC_Addressability Mode = CART_PROP}
 tic()
-process_bic_contracts("CART_PROP")
+bic_cart_proc <- process_bic_contracts("CART_PROP")
 toc()
 ```
 
+```{r BIC_Addressability Mode = PSC_NAICS}
+tic()
+bic_PSC_NAICS <- process_bic_contracts("PSC_NAICS")
+toc()
+```
 
 
 ```{r FAS_Addressability_ADDR_MRKT}
@@ -111,5 +113,25 @@ process_FAS_Addressability("CASE_PROP", "2013-10-01", "2017-10-01")
 toc()
 ```
 
+```{r AgencyBICAddressability }
+## Will use CASE_PROP matix but filter for the resultset only by PSC_NAICS
+## To Support CASE_PROP addressability matrix needs to PSC_NAICS addressability key as well. 
+## We will use the PSC_NAICS mode as an interim solution for presentation purposes. 
+## Required results: 
+## 1) each agencies addressability based on a composite BIC addressability matrix
+## 2) each BICs addressable spend based on an agencies test transactions
+## 2a) run process_bic_contracts("PSC_NAICS") while subsetting test data for the agency
 
-##new_df <- raw_df %>% select(date_signed, reference_piid, idv_ref_idv_piid, managing_agency, contracting_agency_name, product_or_service_code, naics_code, sbg_flag, women_owned_flag, veteran_owned_flag, minority_owned_business_flag, foreign_government, dollars_obligated, contract_name, official_bic_contract, level_1_category)
+
+source("addressabilityEffects.R")
+tic()
+sc <- sparkInit()
+toc()
+tic()
+#load_spark_parquet("minimal_addrmrkt_04DEC17.prq/")
+load_spark_parquet("04DEC17FY13_17.prq/")
+toc()
+tic()
+agency_bic_addressability_df <- process_cfo_act_agencies("2015-10-01", "2016-09-30")
+toc()
+```

@@ -33,51 +33,12 @@ process_FAS_Addressability <- function(add_mode, training_start_date, training_e
   fy17testing_transactions <- fy17testing_transactions %>% mutate(case_multikey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government, "_", co_bus_size_determination_code, "_", foreign_funding_desc, "_", firm8a_joint_venture, "_", dot_certified_disadv_bus, "_", sdb, "_", sdb_flag, "_", hubzone_flag, "_", sheltered_workshop_flag,"_", srdvob_flag, "_", other_minority_owned, "_", baob_flag, "_", aiob_flag, "_", naob_flag, "_", haob_flag, "_", saaob_flag, "_", emerging_small_business_flag, "_", wosb_flag, "_", edwosb_flag, "_", jvwosb_flag, "_", edjvwosb_flag))  
 
   print("Generating FAS addressability matrix")
-#  if(add_mode == "ADDR_MRKT"){
-#                          print(paste0("FAS addressability mode = ", add_mode))
-#                          tic()
-#                          fas_base_addressability_matrix <- FAS_dplyr_gen_addressability_matrix_df(add_mode)
-#                          #fas_instruments_addressability_matrix <- FAS_inst_frm_sched_dplyr_gen_addressability_matrix_df("^GS..[FKQT]")
-#                          toc()
-#                          }
-#  else if (add_mode == "PSC_NAICS")
-#                          {
-#                          print(paste0("FAS addressability mode = ", add_mode)) 
-#                          tic()
-#                          fas_base_addressability_matrix <- FAS_dplyr_gen_addressability_matrix_df(add_mode)
-#                          fas_instruments_addressability_matrix <- FAS_PSC_NAICS_inst_frm_sched_dplyr_gen_addressability_matrix_df("^GS..[FKQT]")
-#                          toc()
-#                          }
-#  else #add_mode == "CASE_PROP"
-#                          {
-#                            print(paste0("FAS addressability mode = ", add_mode)) 
-#                            tic()
-#                            fas_base_addressability_matrix <- FAS_PSC_NAICS_dplyr_gen_addressability_matrix_df("^GS..[FKQT]")
-#                            fas_instruments_addressability_matrix <- FAS_PSC_NAICS_inst_frm_sched_dplyr_gen_addressability_matrix_df("^GS..[FKQT]")
-#                            toc()
-#                           }
+
   print(paste0("FAS addressability matrix production mode = ", add_mode))
   tic()
   fas_addressability_matrix <- FAS_dplyr_gen_addressability_matrix_df(add_mode, training_start_date, training_end_date)
   toc()
-  
-  
-  #print("Removing NA PSC and NAICS observations")
-  #tic()
-  #fas_instruments_addressability_matrix <- fas_instruments_addressability_matrix %>%
-  #                                         filter(is.na(product_or_service_code) == FALSE & is.na(naics_code) == FALSE)
-  #fas_base_addressability_matrix <- fas_base_addressability_matrix %>% 
-  #                                  filter(is.na(product_or_service_code) == FALSE & is.na(naics_code) == FALSE)
-  #toc()
-  
-  #print("Binding addressable matrices for FAS and FAS schedule derived instruments ")
-  #tic()
-  #fas_addressability_matrix <- bind_rows(fas_base_addressability_matrix, fas_instruments_addressability_matrix)
-  #toc()
-  
-  
-  #OR 
-  #re-write FAS_dplyr_gen_addressability_matrix_df() such that it also performs the FAS sourced BPA function to augment the 
+
   # fas_addressability_matrix
   print("Generating FY13 addressability")
   tic()
@@ -164,13 +125,39 @@ process_FAS_Addressability <- function(add_mode, training_start_date, training_e
 }
 
 
-agency_bic_addressable_obs <- function(bic, test_period_start, test_period_end)
+process_cfo_act_agencies <- function(test_start_date, test_end_date)
 {
-#build addressability matrix  
+  print("Getting CFO ACT agencies")
+  tic()
+  cfo_act_agencies <- raw_df %>% filter(as.Date(date_signed) >= as.Date(test_start_date) & as.Date(date_signed) <= as.Date(test_end_date)) %>% 
+    filter(funding_cfo_act_agency == "CFO") %>%
+    select(funding_department_name) %>% 
+    distinct() %>%
+    na.omit() %>% collect() %>% .$funding_department_name
+  toc()
+   agency_list_length <- length(cfo_act_agencies)
+   addressable_obligations_vector <- numeric(0)
+   for(i in 1:agency_list_length)
+   {
+    this_agency = cfo_act_agencies[i] 
+     print(paste0("Producing testing transactions for CFO ACT agency: ",this_agency ))
+     agency_test_transactions <- raw_df %>% filter(as.Date(date_signed) >= as.Date(test_start_date) & as.Date(date_signed) <= as.Date(test_end_date)) %>% 
+       filter(funding_department_name == this_agency)
+     agency_test_transactions <- agency_test_transactions %>% mutate(psc_naics_key = paste0(product_or_service_code,"_",naics_code))
+     agency_test_transactions <- agency_test_transactions %>% mutate(case_multikey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government, "_", co_bus_size_determination_code, "_", foreign_funding_desc, "_", firm8a_joint_venture, "_", dot_certified_disadv_bus, "_", sdb, "_", sdb_flag, "_", hubzone_flag, "_", sheltered_workshop_flag,"_", srdvob_flag, "_", other_minority_owned, "_", baob_flag, "_", aiob_flag, "_", naob_flag, "_", haob_flag, "_", saaob_flag, "_", emerging_small_business_flag, "_", wosb_flag, "_", edwosb_flag, "_", jvwosb_flag, "_", edjvwosb_flag))
+     
+     this_agency_result_df <- process_agency_agg_bic_addressability(cfo_act_agencies[i], agency_test_transactions ) 
+     addressable_obligations <- this_agency_result_df %>% select(dollars_obligated) %>% na.omit() %>% sum()
+     addressable_obligations_vector <- append(addressable_obligations_vector, addressable_obligations)
+     print(paste0("addressable_obligations_vector length = ", length(addressable_obligations_vector)))
+    }
+  
+  cfo_act_agency_result_df <- data_frame(cfo_act_agencies, addressable_obligations_vector)
+  cfo_act_agency_result_df
 }
 
 
-process_gsa_contracts <- function(add_mode)
+process_gsa_contracts <- function(add_mode, testing_transactions)
 { #declare vector accumulators for contract name, addressable obligations result and contract actual obligations 
   actual_obligations_vector <- double()
   addressable_market_vector <- double()
@@ -205,6 +192,9 @@ process_gsa_contracts <- function(add_mode)
 
 process_bic_contracts <- function(add_mode)
 {
+  #try to do a hashmap of fiscal year variables
+  
+  
   #declare vector accumulators for contract name, addressable obligations result and contract actual obligations 
   actual_obligations_vector <- double()
   addressable_market_vector <- double()
@@ -222,13 +212,7 @@ process_bic_contracts <- function(add_mode)
           filter(business_rule_tier == "BIC") %>%
           distinct(contract_name) %>% 
           na.omit() %>% collect() %>% .$contract_name
-  #STEP 2. Query contract_name column for BICs. This has to be done because contract names are different in the 
-  # official_bic_contract column from the names used in the contract column
-  #bic_contracts <<- training_transactions %>% 
-  #  filter(official_bic_contract %in% bic_contract_list) %>% 
-  #  distinct(contract_name) %>%
-  #  collect() %>% 
-  #  .$contract_name
+  
   #set up sentinel for looping through GSA contracts 
   contract_count <- length(bic_contracts)
   for(i in 1:contract_count)

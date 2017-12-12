@@ -128,9 +128,9 @@ load_spark_parquet <- function(archive)
 {
   
   print("Reading in export")
-  raw_df <<- spark_read_parquet(sc, name="raw_df", path = archive)
+  ld_df <<- spark_read_parquet(sc, name="raw_df", path = archive)
   #filter by date range to only have FY16
-  
+  raw_df <<- ld_df %>% filter(level_1_category_group == "GWCM")
   print("subsetting training transactions")
   training_transactions <- raw_df %>% filter(as.Date(date_signed) >= as.Date("2012-10-01") & as.Date(date_signed) <= as.Date("2017-09-30")) 
   training_transactions <- training_transactions %>% mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
