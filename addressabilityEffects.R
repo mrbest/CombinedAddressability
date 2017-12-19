@@ -125,7 +125,7 @@ process_FAS_Addressability <- function(add_mode, training_start_date, training_e
 }
 
 
-process_cfo_act_agencies <- function(test_start_date, test_end_date)
+process_cfo_act_agencies <- function(add_mode, test_start_date, test_end_date)
 {
   print("Getting CFO ACT agencies")
   tic()
@@ -137,7 +137,18 @@ process_cfo_act_agencies <- function(test_start_date, test_end_date)
   toc()
    agency_list_length <- length(cfo_act_agencies)
    addressable_obligations_vector <- numeric(0)
-   for(i in 1:agency_list_length)
+   this_agency = cfo_act_agencies[1]
+   print(paste0("Producing testing transactions for CFO ACT agency: ",this_agency ))
+   agency_test_transactions <- raw_df %>% filter(as.Date(date_signed) >= as.Date(test_start_date) & as.Date(date_signed) <= as.Date(test_end_date)) %>% 
+     filter(funding_department_name == this_agency)
+   agency_test_transactions <- agency_test_transactions %>% mutate(psc_naics_key = paste0(product_or_service_code,"_",naics_code))
+   agency_test_transactions <- agency_test_transactions %>% mutate(case_multikey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government, "_", co_bus_size_determination_code, "_", foreign_funding_desc, "_", firm8a_joint_venture, "_", dot_certified_disadv_bus, "_", sdb, "_", sdb_flag, "_", hubzone_flag, "_", sheltered_workshop_flag,"_", srdvob_flag, "_", other_minority_owned, "_", baob_flag, "_", aiob_flag, "_", naob_flag, "_", haob_flag, "_", saaob_flag, "_", emerging_small_business_flag, "_", wosb_flag, "_", edwosb_flag, "_", jvwosb_flag, "_", edjvwosb_flag))
+   master_agency_df <- process_agency_agg_bic_addressability(add_mode, cfo_act_agencies[1], agency_test_transactions ) 
+   addressable_obligations <- master_agency_df %>% select(dollars_obligated) %>% na.omit() %>% sum()
+   addressable_obligations_vector <- append(addressable_obligations_vector, addressable_obligations)
+   print(paste0("addressable_obligations_vector length = ", length(addressable_obligations_vector)))
+   
+   for(i in 2:agency_list_length)
    {
     this_agency = cfo_act_agencies[i] 
      print(paste0("Producing testing transactions for CFO ACT agency: ",this_agency ))
@@ -146,12 +157,13 @@ process_cfo_act_agencies <- function(test_start_date, test_end_date)
      agency_test_transactions <- agency_test_transactions %>% mutate(psc_naics_key = paste0(product_or_service_code,"_",naics_code))
      agency_test_transactions <- agency_test_transactions %>% mutate(case_multikey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government, "_", co_bus_size_determination_code, "_", foreign_funding_desc, "_", firm8a_joint_venture, "_", dot_certified_disadv_bus, "_", sdb, "_", sdb_flag, "_", hubzone_flag, "_", sheltered_workshop_flag,"_", srdvob_flag, "_", other_minority_owned, "_", baob_flag, "_", aiob_flag, "_", naob_flag, "_", haob_flag, "_", saaob_flag, "_", emerging_small_business_flag, "_", wosb_flag, "_", edwosb_flag, "_", jvwosb_flag, "_", edjvwosb_flag))
      
-     this_agency_result_df <- process_agency_agg_bic_addressability(cfo_act_agencies[i], agency_test_transactions ) 
+     this_agency_result_df <- process_agency_agg_bic_addressability(add_mode, cfo_act_agencies[i], agency_test_transactions ) 
      addressable_obligations <- this_agency_result_df %>% select(dollars_obligated) %>% na.omit() %>% sum()
      addressable_obligations_vector <- append(addressable_obligations_vector, addressable_obligations)
      print(paste0("addressable_obligations_vector length = ", length(addressable_obligations_vector)))
+     master_agency_df <- bind_rows(master_agency_df, this_agency_result_df)
     }
-  
+  write_csv(master_agency_df, "MasterAgencyBicAddressabilityDF.csv")
   cfo_act_agency_result_df <- data_frame(cfo_act_agencies, addressable_obligations_vector)
   cfo_act_agency_result_df
 }

@@ -19,8 +19,8 @@ When you click the **Knit** button a document will be generated that includes bo
 source("addressabilityEffects.R")
 sc <- sparkInit()
 tic()
-#load_spark_parquet("minimal_addrmrkt_04DEC17.prq/")
-load_spark_parquet("04DEC17FY13_17.prq/")
+#load_spark_parquet("04DEC17FY13_17.prq/")
+load_spark_parquet("../../GWCM_Extracts/mini04DEC17V2.prq/")
 toc()
 
 ```
@@ -42,96 +42,17 @@ toc()
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 ```{r GSA Addressability Mode = ADDR_MRKT}
-tic()
-gsa_ADDR_MRKT_addressability <- process_gsa_contracts("ADDR_MRKT")
-toc()
-```
 
-```{r GSA Addressability Mode = PSC_NAICS}
-tic()
-gsa_PSC_NAICS_addressability <- process_gsa_contracts("PSC_NAICS")
-toc()
-```
+agency_bic_PSC_NAICS <- process_cfo_act_agencies("PSC_NAICS", "2016-10-01", "2017-09-30")
+agency_bic_CASE_PROP <- process_cfo_act_agencies("CASE_PROP", "2016-10-01", "2017-09-30")
 
-```{r GSA_Addressability Mode = CART_PROP}
-tic()
-gsa_CART_PROP <- process_gsa_contracts("CART_PROP")
-toc()
-```
+gsa_PSC_NAICS <- process_gsa_contracts("PSC_NAICS", testing_transactions)
+gsa_CART_PROP <- process_gsa_contracts("CASE_PROP", testing_transactions)
 
+bic_PSC_NAICS <- process_bic_contracts("PSC_NAICS") #This need testing transactions parameter added. Default was FY16
+bic_cart_proc <- process_bic_contracts("CASE_PROP")
 
-```{r BIC_Addressability Mode = ADDR_MRKT}
-tic()
-bic_PSC_NAICS_addrMarketSummary <- process_bic_contracts("ADDR_MRKT")
-write_csv(bic_PSC_NAICS_addrMarketSummary, "bic_PSC_NAICS_Summary.csv")
-toc()
-```
+FAS_PSC_NAICS <- process_FAS_Addressability("PSC_NAICS", "2016-10-01", "2017-09-30")
+FAS_CART_PROP <- process_FAS_Addressability("CASE_PROP", "2016-10-01", "2017-09-30")
 
-```{r BIC_Addressability Mode = CART_PROP}
-tic()
-bic_cart_proc <- process_bic_contracts("CART_PROP")
-toc()
-```
-
-```{r BIC_Addressability Mode = PSC_NAICS}
-tic()
-bic_PSC_NAICS <- process_bic_contracts("PSC_NAICS")
-toc()
-```
-
-
-```{r FAS_Addressability_ADDR_MRKT}
-source("addressabilityEffects.R")
-sc <- sparkInit()
-tic()
-load_spark_parquet("minimal_addrmrkt_04DEC17.prq/")
-toc()
-tic()
-process_FAS_Addressability("ADDR_MRKT", "2013-10-01", "2017-10-01")
-toc()
-```
-
-```{r FAS_Addressability_PSC_NAICS}
-source("addressabilityEffects.R")
-sc <- sparkInit()
-tic()
-load_spark_parquet("minimal_addrmrkt_04DEC17.prq/")
-toc()
-tic()
-process_FAS_Addressability("PSC_NAICS", "2013-10-01", "2017-10-01")
-toc()
-```
-
-```{r FAS_Addressability_CASE_PROP}
-source("addressabilityEffects.R")
-sc <- sparkInit()
-tic()
-load_spark_parquet("minimal_addrmrkt_04DEC17.prq/")
-toc()
-tic()
-process_FAS_Addressability("CASE_PROP", "2013-10-01", "2017-10-01")
-toc()
-```
-
-```{r AgencyBICAddressability }
-## Will use CASE_PROP matix but filter for the resultset only by PSC_NAICS
-## To Support CASE_PROP addressability matrix needs to PSC_NAICS addressability key as well. 
-## We will use the PSC_NAICS mode as an interim solution for presentation purposes. 
-## Required results: 
-## 1) each agencies addressability based on a composite BIC addressability matrix
-## 2) each BICs addressable spend based on an agencies test transactions
-## 2a) run process_bic_contracts("PSC_NAICS") while subsetting test data for the agency
-
-
-source("addressabilityEffects.R")
-tic()
-sc <- sparkInit()
-toc()
-tic()
-#load_spark_parquet("minimal_addrmrkt_04DEC17.prq/")
-load_spark_parquet("04DEC17FY13_17.prq/")
-toc()
-tic()
-agency_bic_addressability_df <- process_cfo_act_agencies("2015-10-01", "2016-09-30")
-toc()
 ```

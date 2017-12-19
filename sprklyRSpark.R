@@ -144,3 +144,17 @@ load_spark_parquet <- function(archive)
 
   
 }
+
+
+create_mini <- function(incoming_df)
+{
+  mini_df <- raw_df %>% select(award_type_description, co_bus_size_determination_code, date_signed, eight_a_flag, funding_agency_name, funding_department_name,
+                               minority_owned_business_flag, naics_code, naics_description, piid, idv_ref_idv_piid, product_or_service_code, 
+                               reference_piid, small_business_flag, level_1_category, veteran_owned_flag, women_owned_flag,
+                               dollars_obligated, sbg_flag, sheltered_workshop_flag, foreign_government, foreign_funding_desc, sdb_flag, srdvob_flag,hubzone_flag,
+                               firm8a_joint_venture, dot_certified_disadv_bus, sdb, other_minority_owned, baob_flag, aiob_flag, naob_flag, haob_flag, saaob_flag,
+                               emerging_small_business_flag, wosb_flag, edwosb_flag, jvwosb_flag, contract_name, managing_agency, business_rule_tier, edjvwosb_flag, level_1_category_group, funding_cfo_act_agency)
+
+                                 
+}
+

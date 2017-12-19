@@ -37,7 +37,7 @@ process_one_contract <- function(bic_or_gsa, add_mode, contract_name)
   addressability_result
 }
 
-process_agency_agg_bic_addressability <- function(agency_name, agency_testing_transactions)
+process_agency_agg_bic_addressability <- function(add_mode, agency_name, agency_testing_transactions)
 {
   #build composite BIC addressability matrix
   #get bic from testing list 
@@ -46,7 +46,7 @@ process_agency_agg_bic_addressability <- function(agency_name, agency_testing_tr
     distinct(contract_name) %>% 
     na.omit() %>% collect() %>% .$contract_name
   
-  composite_addressability_matrix <- dplyr_gen_addressability_matrix_df("CART_PROP", bic_contracts, training_transactions)
+  composite_addressability_matrix <- dplyr_gen_addressability_matrix_df(add_mode, bic_contracts, training_transactions)
   composite_addressability_matrix <- composite_addressability_matrix %>% filter(is.na(product_or_service_code) == FALSE & is.na(naics_code) == FALSE) %>%
     distinct(product_or_service_code, naics_code, addkey)
   
@@ -60,7 +60,7 @@ process_agency_agg_bic_addressability <- function(agency_name, agency_testing_tr
   file_contract_name <- gsub("-", "", file_contract_name)
   write_csv(composite_addressability_matrix, paste0(date_path,"/matrices/",file_contract_name,"_matrix_", file_time_stamp, ".csv"))
   
-  result_df <- dplyr_gen_testPhase_df("CART_PROP)", composite_addressability_matrix, agency_testing_transactions, agency_name)
+  result_df <- dplyr_gen_testPhase_df(add_mode, composite_addressability_matrix, agency_testing_transactions, agency_name)
   
   addressability_result_row_count <- result_df %>% count()
   if(addressability_result_row_count >0 )
@@ -76,21 +76,6 @@ process_agency_agg_bic_addressability <- function(agency_name, agency_testing_tr
   addressability_result_formatted <- to_currency(addressability_result, currency_symbol = "$", symbol_first = TRUE, group_size = 3, group_delim = ",", decimal_size = 2,decimal_delim = ".")
   print(paste0( agency_name," addressable spend is : ", addressability_result_formatted))
   result_df
-  
-}
-
-process_one_agency <- function(agency_name)
-{
-  
-}
-
-gen_aggregate_bic_addressability_matrix <- function()
-{
-  
-}
-
-gen_distinct_bic_addressability_matrix_df <- function()
-{
   
 }
 
@@ -110,7 +95,7 @@ dplyr_gen_addressability_matrix_df <- function(add_mode, contract_label, trainin
     mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government) )
   }
   
-  else if (add_mode == "CART_PROP")
+  else if (add_mode == "CASE_PROP")
          {
     addressability_matrix_return <- addressability_matrix_df %>% 
       mutate(addkey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government, "_", co_bus_size_determination_code, "_", foreign_funding_desc, "_", firm8a_joint_venture, "_", dot_certified_disadv_bus, "_", sdb, "_", sdb_flag, "_", hubzone_flag, "_", sheltered_workshop_flag,"_", srdvob_flag, "_", other_minority_owned, "_", baob_flag, "_", aiob_flag, "_", naob_flag, "_", haob_flag, "_", saaob_flag, "_", emerging_small_business_flag, "_", wosb_flag, "_", edwosb_flag, "_", jvwosb_flag, "_", edjvwosb_flag))
@@ -158,7 +143,7 @@ dplyr_gen_testPhase_df <- function(add_mode, addressability_matrix, testing_df, 
   }
   else
   {
-    #CART_PROP
+    #CASE_PROP
     addressability_test_result <- testing_df %>% 
       #filter(level_1_category_group == "GWCM") %>%#
       filter(case_multikey %in% addressability_matrix_addkey) %>% collect()
