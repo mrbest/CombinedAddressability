@@ -163,7 +163,7 @@ process_cfo_act_agencies <- function(add_mode, test_start_date, test_end_date)
      print(paste0("addressable_obligations_vector length = ", length(addressable_obligations_vector)))
      master_agency_df <- bind_rows(master_agency_df, this_agency_result_df)
     }
-  write_csv(master_agency_df, "MasterAgencyBicAddressabilityDF.csv")
+  write_csv(master_agency_df, paste0("MasterAgencyBicAddressabilityDF",test_start_date,"_",test_end_date ,".csv"))
   cfo_act_agency_result_df <- data_frame(cfo_act_agencies, addressable_obligations_vector)
   cfo_act_agency_result_df
 }

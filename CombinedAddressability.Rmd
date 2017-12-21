@@ -42,17 +42,47 @@ toc()
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 ```{r GSA Addressability Mode = ADDR_MRKT}
-
+tic()
 agency_bic_PSC_NAICS <- process_cfo_act_agencies("PSC_NAICS", "2016-10-01", "2017-09-30")
+toc()
+
+tic()
 agency_bic_CASE_PROP <- process_cfo_act_agencies("CASE_PROP", "2016-10-01", "2017-09-30")
+toc()
 
+tic()
 gsa_PSC_NAICS <- process_gsa_contracts("PSC_NAICS", testing_transactions)
+toc()
+
+tic()
 gsa_CART_PROP <- process_gsa_contracts("CASE_PROP", testing_transactions)
+toc()
 
+tic()
 bic_PSC_NAICS <- process_bic_contracts("PSC_NAICS") #This need testing transactions parameter added. Default was FY16
-bic_cart_proc <- process_bic_contracts("CASE_PROP")
-
+toc()
+tic()
+bic_case_proc <- process_bic_contracts("CASE_PROP")
+toc()
+tic()
 FAS_PSC_NAICS <- process_FAS_Addressability("PSC_NAICS", "2016-10-01", "2017-09-30")
+toc()
+tic()
 FAS_CART_PROP <- process_FAS_Addressability("CASE_PROP", "2016-10-01", "2017-09-30")
+toc()
+```
+
+
+
+```{r Agency Addressability Mode = ADDR_MRKT}
+tic()
+FY15agency_bic_CASE_PROP <- process_cfo_act_agencies("CASE_PROP", "2014-10-01", "2015-09-30")
+toc()
+tic()
+FY16agency_bic_CASE_PROP <- process_cfo_act_agencies("CASE_PROP", "2015-10-01", "2016-09-30")
+toc()
+tic()
+FY17agency_bic_CASE_PROP <- process_cfo_act_agencies("CASE_PROP", "2016-10-01", "2017-09-30")
+toc()
 
 ```
