@@ -12,6 +12,7 @@ sparkInit <- function()
   config$spark.executor.memory <- "2G"
   sc <- spark_connect(master = "local", config = config)
   sc
+  
 }
 
 sparkLocalRemoteInit <- function()
