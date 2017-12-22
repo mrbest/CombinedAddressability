@@ -4,6 +4,7 @@ library(readr)
 library(ggplot2)
 library(tictoc)
 library(lucr)
+library(dplyr)
 
 process_one_contract <- function(bic_or_gsa, add_mode, contract_name)
 { 
@@ -36,6 +37,40 @@ process_one_contract <- function(bic_or_gsa, add_mode, contract_name)
   print(paste0( contract_name," addressable spend is : ", addressability_result_formatted))
   addressability_result
 }
+
+
+sparkR_process_one_contract <- function(bic_or_gsa, add_mode, contract_name)
+{ 
+  addressability_matrix <- sparkR_gen_addressability_matrix_df(add_mode, contract_name, training_transactions)
+  addressability_matrix <- addressability_matrix %>% dplyr::filter(is.na(product_or_service_code) == FALSE & is.na(naics_code) == FALSE)
+  ##added the writing of contract solution
+  date_path <- gsub("-", "", Sys.Date())
+  dir.create(date_path)
+  dir.create(paste0(date_path,"/matrices"))
+  file_time_stamp <- gsub(" ", "", Sys.time())
+  file_time_stamp <- gsub(":","", file_time_stamp)
+  file_contract_name <- gsub("/", "", contract_name)
+  file_contract_name <- gsub(" ", "_", file_contract_name)
+  file_contract_name <- gsub("-", "", file_contract_name)
+  write_csv(addressability_matrix, paste0(date_path,"/matrices/",file_contract_name,"_matrix_", bic_or_gsa,"_",add_mode,"_", file_time_stamp, ".csv"))
+  #master_addressability_matrix <<- bind_rows(master_addressability_matrix, addressability_matrix)
+  result_df <- sparkR_gen_testPhase_df(add_mode, addressability_matrix, testing_transactions, contract_name)
+  
+  addressability_result_row_count <- result_df %>% dplyr::count()
+  if(addressability_result_row_count >0 )
+  {
+    addressability_result <- result_df %>% dplyr::select(dollars_obligated)%>% sum()
+  }
+  else
+  {
+    addressability_result <- 0
+  }
+  actual_obligations <<- opt_get_contract_totals(contract_name)
+  addressability_result_formatted <- to_currency(addressability_result, currency_symbol = "$", symbol_first = TRUE, group_size = 3, group_delim = ",", decimal_size = 2,decimal_delim = ".")
+  print(paste0( contract_name," addressable spend is : ", addressability_result_formatted))
+  addressability_result
+}
+
 
 process_agency_agg_bic_addressability <- function(add_mode, agency_name, agency_testing_transactions)
 {
@@ -110,7 +145,32 @@ dplyr_gen_addressability_matrix_df <- function(add_mode, contract_label, trainin
   addressability_matrix_return
 }
 
-
+sparkR_gen_addressability_matrix_df <- function(add_mode, contract_label, training_df)
+{
+  #builds addressabbility matrix based on 6 factors
+  addressability_matrix_df <-  training_df %>% SparkR::filter(training_df$contract_name %in% contract_label) %>%
+    SparkR::arrange( training_df$product_or_service_code,training_df$naics_code, training_df$sbg_flag, training_df$women_owned_flag, training_df$veteran_owned_flag, training_df$minority_owned_business_flag, training_df$foreign_government,  training_df$co_bus_size_determination_code,  training_df$foreign_funding_desc,  training_df$firm8a_joint_venture,  training_df$dot_certified_disadv_bus,  training_df$sdb,  training_df$sdb_flag,  training_df$hubzone_flag,  training_df$sheltered_workshop_flag, training_df$srdvob_flag,  training_df$other_minority_owned,  training_df$baob_flag,  training_df$aiob_flag,  training_df$naob_flag,  training_df$haob_flag,  training_df$saaob_flag,  training_df$emerging_small_business_flag,  training_df$wosb_flag,  training_df$edwosb_flag,  training_df$jvwosb_flag,  training_df$edjvwosb_flag) %>%
+    SparkR::select(training_df$product_or_service_code,training_df$naics_code, training_df$sbg_flag, training_df$women_owned_flag, training_df$veteran_owned_flag, training_df$minority_owned_business_flag, training_df$foreign_government,  training_df$co_bus_size_determination_code,  training_df$foreign_funding_desc,  training_df$firm8a_joint_venture,  training_df$dot_certified_disadv_bus,  training_df$sdb,  training_df$sdb_flag,  training_df$hubzone_flag,  training_df$sheltered_workshop_flag, training_df$srdvob_flag,  training_df$other_minority_owned,  training_df$baob_flag,  training_df$aiob_flag,  training_df$naob_flag,  training_df$haob_flag,  training_df$saaob_flag,  training_df$emerging_small_business_flag, training_df$wosb_flag,  training_df$edwosb_flag,  training_df$jvwosb_flag,  training_df$edjvwosb_flag) 
+    #collect()
+  #adds addressability key to matrix post collection
+  addressability_matrix_return <<- addressability_matrix_df
+  if(add_mode == "ADDR_MRKT"){
+    #training_transactions$addkey <<- concat_ws(sep = "_",
+    addressability_matrix_return$addkey <<- SparkR::concat_ws(sep = "_", addressability_matrix_return$product_or_service_code,addressability_matrix_return$naics_code,addressability_matrix_return$sbg_flag,addressability_matrix_return$women_owned_flag,addressability_matrix_return$veteran_owned_flag,addressability_matrix_return$minority_owned_business_flag,addressability_matrix_return$foreign_government) 
+  }
+  
+  else if (add_mode == "CASE_PROP")
+  {
+    addressability_matrix_return$addkey <<- SparkR::concat_ws(sep = "_", addressability_matrix_return$product_or_service_code,addressability_matrix_return$naics_code,addressability_matrix_return$sbg_flag,addressability_matrix_return$women_owned_flag,addressability_matrix_return$veteran_owned_flag,addressability_matrix_return$minority_owned_business_flag,addressability_matrix_return$foreign_government,addressability_matrix_return$co_bus_size_determination_code,addressability_matrix_return$foreign_funding_desc,addressability_matrix_return$firm8a_joint_venture,addressability_matrix_return$dot_certified_disadv_bus,addressability_matrix_return$sdb,addressability_matrix_return$sdb_flag,addressability_matrix_return$hubzone_flag,addressability_matrix_return$sheltered_workshop_flag,addressability_matrix_return$srdvob_flag,addressability_matrix_return$other_minority_owned,addressability_matrix_return$baob_flag,addressability_matrix_return$aiob_flag,addressability_matrix_return$naob_flag,addressability_matrix_return$haob_flag,addressability_matrix_return$saaob_flag,addressability_matrix_return$emerging_small_business_flag,addressability_matrix_return$wosb_flag,addressability_matrix_return$edwosb_flag,addressability_matrix_return$jvwosb_flag,addressability_matrix_return$edjvwosb_flag)
+  }
+  else #mode="PSC_NAICS"
+  {
+    addressability_matrix_return$addkey <<- SparkR::concat_ws(sep = "_", addressability_matrix_return$product_or_service_code,addressability_matrix_return$naics_code)
+  }
+  addressability_matrix_return <<- addressability_matrix_return %>%SparkR::distinct() %>%  SparkR::collect()
+  
+  addressability_matrix_return
+}
 
 dplyr_gen_testPhase_df <- function(add_mode, addressability_matrix, testing_df, contract_name)
 {
@@ -147,6 +207,48 @@ dplyr_gen_testPhase_df <- function(add_mode, addressability_matrix, testing_df, 
     addressability_test_result <- testing_df %>% 
       #filter(level_1_category_group == "GWCM") %>%#
       filter(case_multikey %in% addressability_matrix_addkey) %>% collect()
+  }
+  
+  
+  write_csv(addressability_test_result, paste0(date_path,"/", file_contract_name,"_resultdf_",add_mode,"_",file_time_stamp,".csv"))
+  addressability_test_result
+}
+
+sparkR_gen_testPhase_df <- function(add_mode, addressability_matrix, testing_df, contract_name)
+{
+  date_path <- gsub("-", "", Sys.Date())
+  dir.create(date_path)
+  file_time_stamp <- gsub(" ", "", Sys.time())
+  file_time_stamp <- gsub(":","", file_time_stamp)
+  file_contract_name <- gsub("/", "", contract_name)
+  file_contract_name <- gsub(" ", "_", file_contract_name)
+  file_contract_name <- gsub("-", "", file_contract_name)
+  
+  
+  #prevents summing of duplicate addressability matrix entries across multiple contracts in FAS ops
+  addressability_matrix_addkey <- addressability_matrix %>% dplyr::select(addkey) %>% dplyr::distinct() %>% .$addkey
+  
+  
+  if(add_mode == "ADDR_MRKT"){
+    addressability_test_result <- testing_df %>% 
+      #filter(level_1_category_group == "GWCM") %>%#
+      SparkR::filter(testing_df$addkey %in% addressability_matrix_addkey) %>% SparkR::collect()
+    
+    
+  }
+  else if(add_mode == "PSC_NAICS")
+    #mode="PSC_NAICS"
+  {
+    addressability_test_result <- testing_df %>% 
+      #filter(level_1_category_group == "GWCM") %>%#
+      SparkR::filter(testing_df$psc_naics_key %in% addressability_matrix_addkey) %>% SparkR::collect()
+  }
+  else
+  {
+    #CASE_PROP
+    addressability_test_result <- testing_df %>% 
+      #filter(level_1_category_group == "GWCM") %>%#
+      SparkR::filter(testing_df$case_multikey %in% addressability_matrix_addkey) %>% SparkR::collect()
   }
   
   
@@ -254,7 +356,7 @@ FAS_dplyr_gen_addressability_matrix_df <- function(addr_mode, start_date, end_da
 }
 
 opt_get_contract_totals <- function(contract_label)
-{
+{##need to take this total from the collected results df instead of sparkdf. It will be lower cost.
   contract_total_obligations = -1
   contract_total_obligations_count <- testing_transactions %>% 
          filter(contract_name %in% contract_label) %>% 

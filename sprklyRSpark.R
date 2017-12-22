@@ -1,8 +1,8 @@
 #Sys.setenv("JAVA_HOME" = "/usr/java")
-library(sparklyr)
+#library(sparklyr)
+#
+library(magrittr)
 library(dplyr)
-#library(magrittr)
-
 sparkInit <- function()
 {
   Sys.setenv("SPARK_MEM" = "30G")
@@ -160,4 +160,32 @@ create_mini <- function(incoming_df)
                                  
 }
 
+
+sparkRInit <- function()
+{
+  
+  Sys.setenv(SPARK_HOME = "/Users/cliftonbest/spark/spark-2.1.0-bin-hadoop2.7")
+  
+  library(SparkR, lib.loc = c(file.path(Sys.getenv("SPARK_HOME"), "R", "lib")))
+  sparkR.session(master = "local[*]", sparkConfig = list(spark.driver.memory = "2g"))
+}
+
+sparkRLoadParquet <- function()
+{
+  ld_df <- read.df("../CombinedAddressability/04DEC17FY13_17.prq/")
+  raw_df <<- ld_df %>% SparkR::filter(ld_df$level_1_category_group == "GWCM")
+  print("subsetting training transactions")
+  training_transactions <<- raw_df %>% 
+    SparkR::filter(date_format(raw_df$date_signed, 'yyyy-MM-dd') >= as.Date("2012-10-01") & date_format(raw_df$date_signed, 'yyyy-MM-dd') <= as.Date("2017-09-30"))  
+  training_transactions$addkey <<- SparkR::concat_ws(sep = "_", training_transactions$product_or_service_code,training_transactions$naics_code, training_transactions$sbg_flag, training_transactions$women_owned_flag, training_transactions$veteran_owned_flag, training_transactions$minority_owned_business_flag, training_transactions$foreign_government) 
+  training_transactions$psc_naics_key <<- SparkR::concat_ws(sep = "_", training_transactions$product_or_service_code,training_transactions$naics_code)
+  training_transactions$case_multikey <<- SparkR::concat_ws(sep = "_",training_transactions$product_or_service_code,training_transactions$naics_code, training_transactions$sbg_flag, training_transactions$women_owned_flag, training_transactions$veteran_owned_flag, training_transactions$minority_owned_business_flag, training_transactions$foreign_government,  training_transactions$co_bus_size_determination_code,  training_transactions$foreign_funding_desc,  training_transactions$firm8a_joint_venture,  training_transactions$dot_certified_disadv_bus,  training_transactions$sdb,  training_transactions$sdb_flag,  training_transactions$hubzone_flag,  training_transactions$sheltered_workshop_flag, training_transactions$srdvob_flag,  training_transactions$other_minority_owned,  training_transactions$baob_flag,  training_transactions$aiob_flag,  training_transactions$naob_flag,  training_transactions$haob_flag,  training_transactions$saaob_flag,  training_transactions$emerging_small_business_flag,  training_transactions$wosb_flag,  training_transactions$edwosb_flag,  training_transactions$jvwosb_flag,  training_transactions$edjvwosb_flag)
+  
+  testing_transactions <<- raw_df %>% 
+    SparkR::filter(date_format(raw_df$date_signed, 'yyyy-MM-dd') >= as.Date("2016-10-01") & date_format(raw_df$date_signed, 'yyyy-MM-dd') <= as.Date("2017-09-30"))  
+  testing_transactions$addkey <<- SparkR::concat_ws(sep = "_", training_transactions$product_or_service_code,training_transactions$naics_code, training_transactions$sbg_flag, training_transactions$women_owned_flag, training_transactions$veteran_owned_flag, training_transactions$minority_owned_business_flag, training_transactions$foreign_government) 
+  testing_transactions$psc_naics_key <<- SparkR::concat_ws(sep = "_", training_transactions$product_or_service_code,training_transactions$naics_code)
+  testing_transactions$case_multikey <<- SparkR::concat_ws(sep = "_",training_transactions$product_or_service_code,training_transactions$naics_code, training_transactions$sbg_flag, training_transactions$women_owned_flag, training_transactions$veteran_owned_flag, training_transactions$minority_owned_business_flag, training_transactions$foreign_government,  training_transactions$co_bus_size_determination_code,  training_transactions$foreign_funding_desc,  training_transactions$firm8a_joint_venture,  training_transactions$dot_certified_disadv_bus,  training_transactions$sdb,  training_transactions$sdb_flag,  training_transactions$hubzone_flag,  training_transactions$sheltered_workshop_flag, training_transactions$srdvob_flag,  training_transactions$other_minority_owned,  training_transactions$baob_flag,  training_transactions$aiob_flag,  training_transactions$naob_flag,  training_transactions$haob_flag,  training_transactions$saaob_flag,  training_transactions$emerging_small_business_flag,  training_transactions$wosb_flag,  training_transactions$edwosb_flag,  training_transactions$jvwosb_flag,  training_transactions$edjvwosb_flag)
+  
+}
 
