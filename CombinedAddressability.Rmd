@@ -20,7 +20,7 @@ source("addressabilityEffects.R")
 sc <- sparkInit()
 tic()
 #load_spark_parquet("04DEC17FY13_17.prq/")
-load_spark_parquet("../../GWCM_Extracts/mini04DEC17V2.prq/")
+load_spark_parquet("../GWCM_Exports/MINI_RAW_09Jan18.prq/")
 toc()
 
 ```
@@ -29,7 +29,7 @@ You can also embed plots, for example:
 
 ```{r plotcats}
 tic()
-fy16testing_transactions <- raw_df %>% filter(as.Date(date_signed) >= as.Date("2015-10-01") & as.Date(date_signed) <= as.Date("2016-09-30"))  
+fy16testing_transactions <- ld_df %>% filter(as.Date(date_signed) >= as.Date("2015-10-01") & as.Date(date_signed) <= as.Date("2016-09-30"))  
 totals <<- fy16testing_transactions %>% group_by(level_1_category) %>% summarise(cat_total = sum(dollars_obligated)) %>% collect()
 total_strings <- totals %>% mutate(dollar_totals = to_currency(cat_total, currency_symbol = "$", symbol_first = TRUE, group_size = 3, group_delim = ",", decimal_size = 2,decimal_delim = ".")) %>% collect()                                                                                                     
 
@@ -86,3 +86,29 @@ FY17agency_bic_CASE_PROP <- process_cfo_act_agencies("CASE_PROP", "2016-10-01", 
 toc()
 
 ```
+
+```{r signature_append}
+library(tictoc)
+source("../CombinedAddressability/sprklyRSpark.R")
+sc <- sparkInit()
+tic()
+print("Reading parquet file")
+ld_df <<- spark_read_parquet(sc, name="raw_df", path = "../GWCM_Exports/fy17_mini_raw_24Jan18.prq/")
+print("Collecting FY to R environment")
+fy17 <- ld_df %>% collect()
+print("Shutting down Spark")
+sparkShutDown(sc)
+toc()
+tic()
+print("performing psc_naics mutation")
+fy17 <<- fy17 %>% mutate(psc_naics_key = paste0(product_or_service_code,"_",naics_code))
+toc()
+tic()
+print("performing contract availability mutation")
+fy17 <<- fy17 %>% mutate(case_multikey = paste0(product_or_service_code,"_",naics_code,"_", sbg_flag,"_", women_owned_flag,"_", veteran_owned_flag,"_", minority_owned_business_flag,"_", foreign_government, "_", co_bus_size_determination_code, "_", foreign_funding_desc, "_", firm8a_joint_venture, "_", dot_certified_disadv_bus, "_", sdb, "_", sdb_flag, "_", hubzone_flag, "_", sheltered_workshop_flag,"_", srdvob_flag, "_", other_minority_owned, "_", baob_flag, "_", aiob_flag, "_", naob_flag, "_", haob_flag, "_", saaob_flag, "_", emerging_small_business_flag, "_", wosb_flag, "_", edwosb_flag, "_", jvwosb_flag, "_", edjvwosb_flag))
+toc()
+
+
+```
+
+

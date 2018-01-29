@@ -234,6 +234,9 @@ process_bic_contracts <- function(add_mode)
     actual_obligations_vector <- append(actual_obligations_vector, opt_get_contract_totals(bic_contracts[i]))
   }
   
+  #master_addressability_matrix <<- master_addressability_matrix %>% select(contract, psc_naics, addkey )
+  mini_addressaabilit_matrix <- master_addressability_matrix %>% select(contract, psc_naics, addkey)
+  write_csv(mini_addressaabilit_matrix, "bic_master_addressability_matrix.csv")
   bic_result_df <- data_frame(contract_name_vector, actual_obligations_vector, addressable_market_vector)
   bic_result_df
 }
