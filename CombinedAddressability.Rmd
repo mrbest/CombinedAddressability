@@ -19,8 +19,8 @@ When you click the **Knit** button a document will be generated that includes bo
 source("addressabilityEffects.R")
 sc <- sparkInit()
 tic()
-#load_spark_parquet("04DEC17FY13_17.prq/")
-load_spark_parquet("../GWCM_Exports/MINI_RAW_09Jan18.prq/")
+load_spark_parquet("../GWCM_Exports/RAW_FY16_Present24Jan18.prq/")
+#load_spark_parquet("../GWCM_Exports/fy17_mini_raw_24Jan18.prq/")
 toc()
 
 ```
@@ -87,7 +87,7 @@ toc()
 
 ```
 
-```{r signature_append}
+```{r dataset_signature_append}
 library(tictoc)
 source("../CombinedAddressability/sprklyRSpark.R")
 sc <- sparkInit()

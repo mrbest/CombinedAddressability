@@ -197,6 +197,9 @@ process_gsa_contracts <- function(add_mode, testing_transactions)
     actual_obligations_vector <- append(actual_obligations_vector, opt_get_contract_totals(gsa_contracts[i]))
   }
   #write result for all contracts to a dataframe  
+  mini_addressaabilit_matrix <- master_addressability_matrix %>% select(contract, psc_naics, addkey)
+  write_csv(mini_addressaabilit_matrix, "fas_master_addressability_matrix.csv")
+  
   gsa_result_df <- data_frame(contract_name_vector, actual_obligations_vector, addressable_market_vector)
   gsa_result_df
 }

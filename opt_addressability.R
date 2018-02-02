@@ -145,7 +145,7 @@ dplyr_gen_addressability_matrix_df <- function(add_mode, contract_label, trainin
   #matrix_length <- addressability_matrix_return%>% count() %>% .$n
   
   #contract_label_appending_vector <- rep(contract_label, matrix_length)
-  addressability_matrix_return <- addressability_matrix_return %>% mutate(psc_naics = paste0(product_or_service_code, naics_code))
+  addressability_matrix_return <- addressability_matrix_return %>% mutate(psc_naics = paste0(product_or_service_code,"_",naics_code))
   addressability_matrix_return <- addressability_matrix_return %>% mutate(contract = contract_label)
  # addressability_matrix_return <- addressability_matrix_return %>% select(contract, psc_naics, addkey)
 }
