@@ -169,7 +169,7 @@ process_cfo_act_agencies <- function(add_mode, test_start_date, test_end_date)
 }
 
 
-process_gsa_contracts <- function(add_mode, testing_transactions)
+process_gsa_contracts <- function(add_mode, training_transactions, testing_transactions)
 { #declare vector accumulators for contract name, addressable obligations result and contract actual obligations 
   actual_obligations_vector <- double()
   addressable_market_vector <- double()
@@ -182,6 +182,11 @@ process_gsa_contracts <- function(add_mode, testing_transactions)
   #set master_addressability_matrix up for recieving addressability matrices
   master_addressability_matrix <<- master_addressability_matrix[-1:rowcount, ]
   
+  master_result_df <<- testing_transactions %>% collect()
+  rowcount <- master_result_df %>% count() %>% .$n 
+  rowcount <- rowcount * -1
+  master_result_df <<- master_result_df[-1:rowcount, ]
+  
   #declare and query list of GSA contracts
   gsa_contracts <- training_transactions %>% 
     filter(managing_agency == "GSA") %>% 
@@ -192,9 +197,14 @@ process_gsa_contracts <- function(add_mode, testing_transactions)
   contract_count <- length(gsa_contracts)
   for(i in 1:contract_count)
   {##accumulate addressable market and actual obligations contract by contract
-    addressable_market_vector <- append(addressable_market_vector, process_one_contract("_GSA_",add_mode, gsa_contracts[i]))
+    #bic_or_gsa, add_mode, contract_name, training_transactions, testing_transaction
+    addressable_market_vector <- append(addressable_market_vector, process_one_contract(bic_or_gsa = "_GSA_",
+                                                                                        add_mode = add_mode, 
+                                                                                        contract_name = gsa_contracts[i], 
+                                                                                        training_transactions = training_transactions, 
+                                                                                        testing_transaction = testing_transactions))
     contract_name_vector <- append(contract_name_vector, gsa_contracts[i])
-    actual_obligations_vector <- append(actual_obligations_vector, opt_get_contract_totals(gsa_contracts[i]))
+    actual_obligations_vector <- append(actual_obligations_vector, opt_get_contract_totals(gsa_contracts[i], testing_transactions))
   }
   #write result for all contracts to a dataframe  
   mini_addressaabilit_matrix <- master_addressability_matrix %>% select(contract, psc_naics, addkey)

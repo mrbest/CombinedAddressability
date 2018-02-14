@@ -6,7 +6,7 @@ library(tictoc)
 library(lucr)
 library(dplyr)
 
-process_one_contract <- function(bic_or_gsa, add_mode, contract_name)
+process_one_contract <- function(bic_or_gsa, add_mode, contract_name, training_transactions, testing_transactions)
 { 
   addressability_matrix <- dplyr_gen_addressability_matrix_df(add_mode, contract_name, training_transactions)
   addressability_matrix <- addressability_matrix %>% filter(is.na(product_or_service_code) == FALSE & is.na(naics_code) == FALSE)
@@ -26,13 +26,14 @@ process_one_contract <- function(bic_or_gsa, add_mode, contract_name)
   addressability_result_row_count <- result_df %>% count()
   if(addressability_result_row_count >0 )
         {
+        master_result_df <<- bind_rows(master_result_df, result_df)
         addressability_result <- result_df %>% select(dollars_obligated)%>% sum()
         }
   else
     {
       addressability_result <- 0
     }
-  actual_obligations <<- opt_get_contract_totals(contract_name)
+  actual_obligations <<- opt_get_contract_totals(contract_name, testing_transactions)
   addressability_result_formatted <- to_currency(addressability_result, currency_symbol = "$", symbol_first = TRUE, group_size = 3, group_delim = ",", decimal_size = 2,decimal_delim = ".")
   print(paste0( contract_name," addressable spend is : ", addressability_result_formatted))
   addressability_result
@@ -211,7 +212,7 @@ dplyr_gen_testPhase_df <- function(add_mode, addressability_matrix, testing_df, 
     #CASE_PROP
     addressability_test_result <- testing_df %>% 
       #filter(level_1_category_group == "GWCM") %>%#
-      filter(case_multikey %in% addressability_matrix_addkey) %>% collect()
+      filter(contract_availability_key %in% addressability_matrix_addkey) %>% collect()
   }
   
   
@@ -360,7 +361,7 @@ FAS_dplyr_gen_addressability_matrix_df <- function(addr_mode, start_date, end_da
   addressability_matrix_return
 }
 
-opt_get_contract_totals <- function(contract_label)
+opt_get_contract_totals <- function(contract_label, testing_transactions)
 {##need to take this total from the collected results df instead of sparkdf. It will be lower cost.
   contract_total_obligations = -1
   contract_total_obligations_count <- testing_transactions %>% 
